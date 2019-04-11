@@ -2,6 +2,7 @@ package cn.org.hentai.jtt1078.server;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by matrixy on 2019/4/10.
@@ -18,6 +19,11 @@ public final class Session
     {
         this.attributes.put(key, value);
         return this;
+    }
+
+    public Set<String> keys()
+    {
+        return this.attributes.keySet();
     }
 
     public <T> T get(String key)

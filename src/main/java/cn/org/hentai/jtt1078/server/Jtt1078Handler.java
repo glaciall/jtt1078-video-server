@@ -30,6 +30,8 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         String sim = packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD();
         int channel = packet.nextByte() & 0xff;
 
+        // 因为FFMPEG推送有缓冲，所以在停止后又立即发起视频推送是会出现推送通道冲突的情况
+        // 所以最好能够每次都分配到新的rtmp通道上去
         String rtmpURL = Configs.get("rtmp.format").replace("{sim}", sim).replace("{channel}", String.valueOf(channel));
 
         Session session = getSession();
@@ -39,17 +41,17 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         }
 
         String channelKey = String.format("publisher-%d", channel);
-        Long publishChannel = session.get(channelKey);
-        if (publishChannel == null)
+        Long publisherId = session.get(channelKey);
+        if (publisherId == null)
         {
-            publishChannel = PublisherManager.getInstance().request(rtmpURL);
-            if (publishChannel == -1) throw new RuntimeException("exceed max concurrent stream pushing limitation");
-            session.set(channelKey, publishChannel);
+            publisherId = PublisherManager.getInstance().request(rtmpURL);
+            if (publisherId == -1) throw new RuntimeException("exceed max concurrent stream pushing limitation");
+            session.set(channelKey, publisherId);
 
             logger.info("start streaming to {}", rtmpURL);
         }
 
-        PublisherManager.getInstance().publish(publishChannel, packet.seek(30).nextBytes());
+        PublisherManager.getInstance().publish(publisherId, packet.seek(30).nextBytes());
     }
 
     public final Session getSession()

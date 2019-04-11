@@ -59,24 +59,24 @@ public final class PublisherManager
         int poolSize = Configs.getInt("fifo-pool.size", 64);
         if (publishers.size() >= poolSize) return -1;
 
-        long channel = sequence.addAndGet(1L);
+        long id = sequence.addAndGet(1L);
         synchronized (lock)
         {
-            Publisher publisher = new Publisher(channel);
+            Publisher publisher = new Publisher(id);
             publisher.open(rtmpURL);
 
-            publishers.put(channel, publisher);
+            publishers.put(id, publisher);
         }
-        return channel;
+        return id;
     }
 
     // 转发H264数据到FIFO中
-    public void publish(long channel, byte[] data) throws Exception
+    public void publish(long id, byte[] data) throws Exception
     {
-        Publisher publisher = publishers.get(channel);
+        Publisher publisher = publishers.get(id);
         if (null == publisher)
         {
-            throw new RuntimeException("no such publisher: " + channel);
+            throw new RuntimeException("no such publisher: " + id);
         }
 
         if (publisher.publish(data) == false)
@@ -103,7 +103,7 @@ public final class PublisherManager
                 {
                     itr.remove();
                     publisher.close();
-                    logger.debug("publisher-{} timedout and close automatically", publisher.channel);
+                    logger.debug("publisher-{} timeout and close automatically", publisher.channel);
                 }
             }
             lock.notifyAll();
@@ -200,7 +200,7 @@ public final class PublisherManager
             }
             catch(Exception ex)
             {
-                logger.error("free publish channel failed", ex);
+                // logger.error("close publish channel failed", ex);
             }
             try { new File(fifoFilePath).delete(); } catch(Exception e) { }
             try { fileChannel.close(); } catch(Exception e) { }
