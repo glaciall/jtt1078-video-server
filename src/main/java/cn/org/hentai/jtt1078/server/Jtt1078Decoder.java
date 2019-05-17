@@ -9,7 +9,7 @@ import cn.org.hentai.jtt1078.util.Packet;
  */
 public class Jtt1078Decoder
 {
-    ByteHolder buffer = new ByteHolder(40960);
+    ByteHolder buffer = new ByteHolder(4096);
 
     public void write(byte[] block)
     {
