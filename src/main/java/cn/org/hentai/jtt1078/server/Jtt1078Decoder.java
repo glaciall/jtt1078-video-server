@@ -46,7 +46,6 @@ public class Jtt1078Decoder
         Packet packet = Packet.create(packetLength);
         byte[] block = new byte[packetLength];
         this.buffer.sliceInto(block, packetLength);
-        if (bodyLength > 950) System.out.println(dataType);
         return Packet.create(block);
     }
 }
