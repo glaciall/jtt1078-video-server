@@ -14,7 +14,7 @@ public class VideoPushTest
         Socket conn = new Socket("localhost", 1078);
         OutputStream os = conn.getOutputStream();
 
-        InputStream fis = VideoPushTest.class.getResourceAsStream("/tcpdump.bin");
+        InputStream fis = VideoPushTest.class.getResourceAsStream("/tcpdump2.bin");
         int len = -1;
         byte[] block = new byte[512];
         while ((len = fis.read(block)) > -1)

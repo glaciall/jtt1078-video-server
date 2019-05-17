@@ -9,7 +9,7 @@ import cn.org.hentai.jtt1078.util.Packet;
  */
 public class Jtt1078Decoder
 {
-    ByteHolder buffer = new ByteHolder(4096);
+    ByteHolder buffer = new ByteHolder(40960);
 
     public void write(byte[] block)
     {
@@ -33,11 +33,20 @@ public class Jtt1078Decoder
             throw new RuntimeException("invalid protocol header: " + header);
         }
 
-        int bodyLength = this.buffer.getShort(28);
-        if (this.buffer.size() < bodyLength + 30) return null;
-        Packet packet = Packet.create(bodyLength + 30);
-        byte[] block = new byte[bodyLength + 30];
-        this.buffer.sliceInto(block, bodyLength + 30);
+        int lengthOffset = 28;
+        int dataType = (this.buffer.get(15) >> 4) & 0x0f;
+        // 透传数据类型：0100，没有后面的时间以及Last I Frame Interval和Last Frame Interval字段
+        if (dataType == 0x04) lengthOffset = 28 - 8 - 2 - 2;
+        else if (dataType == 0x03) lengthOffset = 28 - 4;
+        int bodyLength = this.buffer.getShort(lengthOffset);
+
+        int packetLength = bodyLength + lengthOffset + 2;
+
+        if (this.buffer.size() < packetLength) return null;
+        Packet packet = Packet.create(packetLength);
+        byte[] block = new byte[packetLength];
+        this.buffer.sliceInto(block, packetLength);
+        if (bodyLength > 950) System.out.println(dataType);
         return Packet.create(block);
     }
 }
