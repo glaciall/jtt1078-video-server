@@ -51,7 +51,13 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
             logger.info("start streaming to {}", rtmpURL);
         }
 
-        PublisherManager.getInstance().publish(publisherId, packet.seek(30).nextBytes());
+        int lengthOffset = 28;
+        int dataType = (packet.seek(15).nextByte() >> 4) & 0x0f;
+        // 透传数据类型：0100，没有后面的时间以及Last I Frame Interval和Last Frame Interval字段
+        if (dataType == 0x04) lengthOffset = 28 - 8 - 2 - 2;
+        else if (dataType == 0x03) lengthOffset = 28 - 4;
+
+        PublisherManager.getInstance().publish(publisherId, packet.seek(lengthOffset + 2).nextBytes());
     }
 
     public final Session getSession()
