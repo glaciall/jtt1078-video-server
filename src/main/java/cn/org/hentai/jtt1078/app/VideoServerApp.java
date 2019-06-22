@@ -74,6 +74,10 @@ public class VideoServerApp
         {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
+
+            PublisherManager.getInstance().shutdown();
+
+            System.out.println("program exited...");
         }
         catch(Exception e)
         {

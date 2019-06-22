@@ -110,6 +110,19 @@ public final class PublisherManager
         }
     }
 
+    public void shutdown()
+    {
+        synchronized (lock)
+        {
+            Iterator<Long> itr = publishers.keySet().iterator();
+            while (itr.hasNext())
+            {
+                Publisher publisher = publishers.get(itr.next());
+                publisher.close();
+            }
+        }
+    }
+
     static PublisherManager instance;
     public static synchronized PublisherManager getInstance()
     {
