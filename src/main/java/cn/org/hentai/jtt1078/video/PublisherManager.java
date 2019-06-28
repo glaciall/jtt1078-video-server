@@ -138,6 +138,7 @@ public final class PublisherManager
         ByteBuffer byteBuffer;
         String fifoFilePath;
         long lastActiveTime;
+        boolean publishing = false;
 
         public Publisher(long channel)
         {
@@ -148,6 +149,7 @@ public final class PublisherManager
 
         public boolean isTimeout()
         {
+            if (publishing) return false;
             return System.currentTimeMillis() - lastActiveTime > 5000;
         }
 
@@ -157,7 +159,7 @@ public final class PublisherManager
             File fifo = new File(fifoFilePath);
             process = Runtime.getRuntime().exec(String.format("%s -re -i %s -c copy -f flv %s", Configs.get("ffmpeg.path"), fifo.getAbsolutePath(), rtmpURL));
             fileChannel = FileChannel.open(Paths.get(fifoFilePath), EnumSet.of(StandardOpenOption.WRITE));
-            byteBuffer = ByteBuffer.allocate(4096);
+            byteBuffer = ByteBuffer.allocate(8192);
 
              // 以下代码用于从process的stdout、stderr标准流中读取内容，将得到ffmpeg实际运行时的控制台输出，便于调试和跟踪ffmpeg的运行情况
             /*
@@ -190,11 +192,20 @@ public final class PublisherManager
         public boolean publish(byte[] data) throws Exception
         {
             if (process.isAlive() == false) return false;
-            byteBuffer.clear();
-            byteBuffer.put(data);
-            byteBuffer.flip();
-            fileChannel.write(byteBuffer);
-            byteBuffer.flip();
+            publishing = true;
+            try
+            {
+                byteBuffer.clear();
+                byteBuffer.put(data);
+                byteBuffer.flip();
+                fileChannel.write(byteBuffer);
+                byteBuffer.flip();
+            }
+            catch(Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+            publishing = false;
             this.lastActiveTime = System.currentTimeMillis();
             return true;
         }
