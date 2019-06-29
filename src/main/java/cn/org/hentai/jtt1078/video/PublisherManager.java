@@ -90,6 +90,12 @@ public final class PublisherManager
         }
     }
 
+    public void close(long id)
+    {
+        Publisher publisher = publishers.get(id);
+        if (publisher != null) publisher.close();
+    }
+
     // 清理超时无数据交换的进程
     private void purge()
     {
@@ -130,7 +136,7 @@ public final class PublisherManager
         return instance;
     }
 
-    static class Publisher
+    static class Publisher extends Thread
     {
         long channel;
         Process process;
@@ -139,12 +145,18 @@ public final class PublisherManager
         String fifoFilePath;
         long lastActiveTime;
         boolean publishing = false;
+        Object lock = null;
+        LinkedList<byte[]> packets = null;
 
         public Publisher(long channel)
         {
             this.channel = channel;
             this.fifoFilePath = new File(new File(Configs.get("fifo-pool.path")), channel + ".fifo").getAbsolutePath();
             this.lastActiveTime = System.currentTimeMillis();
+            this.lock = new Object();
+            this.packets = new LinkedList<>();
+
+            this.setName("publisher-" + channel);
         }
 
         public boolean isTimeout()
@@ -161,65 +173,73 @@ public final class PublisherManager
             fileChannel = FileChannel.open(Paths.get(fifoFilePath), EnumSet.of(StandardOpenOption.WRITE));
             byteBuffer = ByteBuffer.allocate(8192);
 
-             // 以下代码用于从process的stdout、stderr标准流中读取内容，将得到ffmpeg实际运行时的控制台输出，便于调试和跟踪ffmpeg的运行情况
-            /*
-            new Thread() {
-                public void run() {
-                    try {
-                        InputStream stdout = process.getInputStream(), stderr = process.getErrorStream();
-                        while (true) {
-                            byte[] block = new byte[128];
-                            if (stdout.available() > 0) {
-                                int len = stdout.read(block, 0, Math.min(128, stdout.available()));
-                                if (len > -1) System.out.print(new String(block, 0, len));
-                            }
+            StdoutCleaner.getInstance().watch(channel, process);
 
-                            if (stderr.available() > 0) {
-                                int len = stderr.read(block, 0, Math.min(128, stderr.available()));
-                                if (len > -1) System.out.print(new String(block, 0, len));
-                            }
-
-                            Thread.sleep(50);
-                        }
-                    } catch (Exception ex) {
-                    }
-                }
-            }.start();
-            */
+            this.start();
         }
 
         // 将data写入到FIFO文件中去，好让
         public boolean publish(byte[] data) throws Exception
         {
             if (process.isAlive() == false) return false;
-            publishing = true;
-            try
+            synchronized (lock)
             {
-                byteBuffer.clear();
-                byteBuffer.put(data);
-                byteBuffer.flip();
-                fileChannel.write(byteBuffer);
-                byteBuffer.flip();
+                packets.add(data);
+                lock.notify();
             }
-            catch(Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-            publishing = false;
-            this.lastActiveTime = System.currentTimeMillis();
             return true;
+        }
+
+        public void run()
+        {
+            while (!this.isInterrupted())
+            {
+                byte[] data = null;
+                synchronized (lock)
+                {
+                    while (this.isInterrupted() == false && packets.size() == 0) try { lock.wait(); } catch(Exception e) { }
+                    if (packets.size() == 0) break;
+                    data = packets.removeFirst();
+                }
+
+                publishing = true;
+                try
+                {
+                    byteBuffer.clear();
+                    byteBuffer.put(data);
+                    byteBuffer.flip();
+                    fileChannel.write(byteBuffer);
+                    byteBuffer.flip();
+                }
+                catch(Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+                publishing = false;
+                this.lastActiveTime = System.currentTimeMillis();
+            }
         }
 
         // 回收，关闭掉相关的资源
         public void close()
         {
+            try { this.interrupt(); } catch(Exception e) { }
+            try
+            {
+                synchronized (lock)
+                {
+                    lock.notifyAll();
+                }
+            }
+            catch(Exception e) { }
+
             try
             {
                 if (process != null && process.isAlive())
                 {
                     process.destroy();
-                    boolean exited = process.waitFor(30, TimeUnit.SECONDS);
-                    if (!exited) throw new RuntimeException("unable to terminate process: " + process);
+                    // boolean exited = process.waitFor(30, TimeUnit.SECONDS);
+                    // if (!exited) throw new RuntimeException("unable to terminate process: " + process);
                 }
             }
             catch(Exception ex)
@@ -231,6 +251,8 @@ public final class PublisherManager
             byteBuffer = null;
             fileChannel = null;
             process = null;
+
+            StdoutCleaner.getInstance().unwatch(channel);
         }
 
         @Override
