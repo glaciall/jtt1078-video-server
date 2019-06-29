@@ -4,6 +4,7 @@ import cn.org.hentai.jtt1078.server.Jtt1078Handler;
 import cn.org.hentai.jtt1078.server.Jtt1078MessageDecoder;
 import cn.org.hentai.jtt1078.util.Configs;
 import cn.org.hentai.jtt1078.video.PublisherManager;
+import cn.org.hentai.jtt1078.video.StdoutCleaner;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -30,6 +31,7 @@ public class VideoServerApp
     {
         Configs.init("/app.properties");
         PublisherManager.getInstance().init();
+        StdoutCleaner.init();
 
         Signal.handle(new Signal("TERM"), new SignalHandler()
         {
