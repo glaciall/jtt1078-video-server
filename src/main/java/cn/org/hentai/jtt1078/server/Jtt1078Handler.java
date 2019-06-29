@@ -4,6 +4,7 @@ import cn.org.hentai.jtt1078.util.ByteUtils;
 import cn.org.hentai.jtt1078.util.Configs;
 import cn.org.hentai.jtt1078.util.Packet;
 import cn.org.hentai.jtt1078.video.PublisherManager;
+import cn.org.hentai.jtt1078.video.StdoutCleaner;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.Attribute;
@@ -11,6 +12,8 @@ import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -67,6 +70,12 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         else return attr.get();
     }
 
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception
+    {
+        super.channelInactive(ctx);
+    }
+
     public final void setSession(Session session)
     {
         context.channel().attr(SESSION_KEY).set(session);
@@ -75,7 +84,32 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception
     {
-        super.exceptionCaught(ctx, cause);
+        // super.exceptionCaught(ctx, cause);
+        cause.printStackTrace();
+
+        if (ctx != null)
+        {
+            Session session = getSession();
+            if (session != null)
+            {
+                Iterator itr = session.attributes.keySet().iterator();
+                while (itr.hasNext())
+                {
+                    Object key = itr.next();
+                    Object val = session.attributes.get(key);
+
+                    System.err.println(key + " ==> " + val);
+                    if (val instanceof java.lang.Long && key.toString().startsWith("publisher"))
+                    {
+                        long channel = Long.parseLong(val.toString());
+
+                        PublisherManager.getInstance().close(channel);
+                        StdoutCleaner.getInstance().unwatch(channel);
+                    }
+                }
+            }
+        }
+
         ctx.close();
     }
 }
