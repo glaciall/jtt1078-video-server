@@ -6,9 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.*;
 
 /**
  * Created by matrixy on 2019/6/29.
@@ -57,10 +55,14 @@ public class StdoutCleaner extends Thread
         {
             try
             {
-                Iterator<Long> itr = processes.keySet().iterator();
-                while (itr.hasNext())
+                List<Long> channels = null;
+                synchronized (lock)
                 {
-                    Long channel = itr.next();
+                    channels = Arrays.asList(processes.keySet().toArray(new Long[0]));
+                }
+                for (int i = 0; i < channels.size(); i++)
+                {
+                    Long channel = channels.get(i);
                     Process process = processes.get(channel);
                     if (process.isAlive() == false)
                     {
