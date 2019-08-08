@@ -169,7 +169,7 @@ public final class PublisherManager
         {
             mkfifo(fifoFilePath);
             File fifo = new File(fifoFilePath);
-            process = Runtime.getRuntime().exec(String.format("%s -re -i %s -c copy -f flv %s", Configs.get("ffmpeg.path"), fifo.getAbsolutePath(), rtmpURL));
+            process = Runtime.getRuntime().exec(String.format("%s -i %s -c copy -f flv %s", Configs.get("ffmpeg.path"), fifo.getAbsolutePath(), rtmpURL));
             fileChannel = FileChannel.open(Paths.get(fifoFilePath), EnumSet.of(StandardOpenOption.WRITE));
             byteBuffer = ByteBuffer.allocate(8192);
 
