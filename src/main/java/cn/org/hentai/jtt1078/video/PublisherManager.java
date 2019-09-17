@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
@@ -35,13 +36,6 @@ public final class PublisherManager
     // 初始化，清理文件、启动定时器
     public void init()
     {
-        // 先删个精光
-        File basePath = new File(Configs.get("fifo-pool.path"));
-        for (File file : basePath.listFiles())
-        {
-            file.delete();
-        }
-
         // 定时清理超时的转发进程
         new Timer().scheduleAtFixedRate(new TimerTask()
         {
@@ -56,8 +50,7 @@ public final class PublisherManager
     // 先申请一个推送通道
     public long request(String rtmpURL) throws Exception
     {
-        int poolSize = Configs.getInt("fifo-pool.size", 64);
-        if (publishers.size() >= poolSize) return -1;
+        if (publishers.size() >= 1024) return -1;
 
         long id = sequence.addAndGet(1L);
         synchronized (lock)
@@ -70,7 +63,7 @@ public final class PublisherManager
         return id;
     }
 
-    // 转发H264数据到FIFO中
+    // 转发H264数据到ffmpeg子进程
     public void publish(long id, byte[] data) throws Exception
     {
         Publisher publisher = publishers.get(id);
@@ -140,9 +133,7 @@ public final class PublisherManager
     {
         long channel;
         Process process;
-        FileChannel fileChannel;
-        ByteBuffer byteBuffer;
-        String fifoFilePath;
+        OutputStream output;
         long lastActiveTime;
         boolean publishing = false;
         Object lock = null;
@@ -151,7 +142,6 @@ public final class PublisherManager
         public Publisher(long channel)
         {
             this.channel = channel;
-            this.fifoFilePath = new File(new File(Configs.get("fifo-pool.path")), channel + ".fifo").getAbsolutePath();
             this.lastActiveTime = System.currentTimeMillis();
             this.lock = new Object();
             this.packets = new LinkedList<>();
@@ -167,11 +157,12 @@ public final class PublisherManager
 
         public void open(String rtmpURL) throws Exception
         {
-            mkfifo(fifoFilePath);
-            File fifo = new File(fifoFilePath);
-            process = Runtime.getRuntime().exec(String.format("%s -i %s -c copy -f flv %s", Configs.get("ffmpeg.path"), fifo.getAbsolutePath(), rtmpURL));
-            fileChannel = FileChannel.open(Paths.get(fifoFilePath), EnumSet.of(StandardOpenOption.WRITE));
-            byteBuffer = ByteBuffer.allocate(8192);
+            process = Runtime.getRuntime().exec(String.format("%s -i - -c copy -f flv %s", Configs.get("ffmpeg.path"), rtmpURL));
+            //-------------------------------------------------------^-----------------------------------------------------------
+            //-------------------------------------------------------^-----------------------------------------------------------
+            //-------------------------------------------------------^-----------------------------------------------------------
+            //-------------------------------------------------------^这个-表示ffmpeg进程将从stdin读取数据进行转发，避免了对fifo命名管道的依赖
+            output = process.getOutputStream();
 
             StdoutCleaner.getInstance().watch(channel, process);
 
@@ -205,11 +196,8 @@ public final class PublisherManager
                 publishing = true;
                 try
                 {
-                    byteBuffer.clear();
-                    byteBuffer.put(data);
-                    byteBuffer.flip();
-                    fileChannel.write(byteBuffer);
-                    byteBuffer.flip();
+                    output.write(data);
+                    output.flush();
                 }
                 catch(Exception e)
                 {
@@ -246,10 +234,7 @@ public final class PublisherManager
             {
                 // logger.error("close publish channel failed", ex);
             }
-            try { new File(fifoFilePath).delete(); } catch(Exception e) { }
-            try { fileChannel.close(); } catch(Exception e) { }
-            byteBuffer = null;
-            fileChannel = null;
+            try { if (output != null) output.close(); } catch(Exception e) { }
             process = null;
 
             StdoutCleaner.getInstance().unwatch(channel);
@@ -258,22 +243,7 @@ public final class PublisherManager
         @Override
         public String toString()
         {
-            return "Publisher{hash=" + hashCode() + ", " + "channel=" + channel + ", fifoFilePath='" + fifoFilePath + '\'' + ", lastActiveTime=" + lastActiveTime + '}';
-        }
-    }
-
-    private static void mkfifo(String path)
-    {
-        try
-        {
-            String mkfifoPath = Configs.get("mkfifo.path");
-            int exitCode = Runtime.getRuntime().exec(String.format("%s %s", mkfifoPath, path)).waitFor();
-            logger.debug(String.format("execute: %s %s ==> %d", mkfifoPath, path, exitCode));
-            if (exitCode != 0) throw new RuntimeException("mkfifo error: " + exitCode);
-        }
-        catch(Exception ex)
-        {
-            throw new RuntimeException(ex);
+            return "Publisher{hash=" + hashCode() + ", " + "channel=" + channel + ", lastActiveTime=" + lastActiveTime + '}';
         }
     }
 }
