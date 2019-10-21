@@ -1,5 +1,6 @@
 package cn.org.hentai.jtt1078.video;
 
+import cn.org.hentai.jtt1078.util.Configs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +17,7 @@ public class StdoutCleaner extends Thread
     static Logger logger = LoggerFactory.getLogger(StdoutCleaner.class);
 
     Object lock = null;
+    boolean debugMode = false;
     HashMap<Long, Process> processes;
     LinkedList<Long> readyToClose;
 
@@ -26,6 +28,7 @@ public class StdoutCleaner extends Thread
         readyToClose = new LinkedList<>();
 
         setName("stdout-cleaner");
+        debugMode = "true".equalsIgnoreCase(Configs.get("ffmpeg.debug"));
     }
 
     public void watch(Long channel, Process process)
@@ -87,7 +90,11 @@ public class StdoutCleaner extends Thread
                         }
                         break;
                     }
-                    if (buffLength > 0) stdout.read(block, 0, Math.min(buffLength, block.length));
+                    if (buffLength > 0)
+                    {
+                        int x = stdout.read(block, 0, Math.min(buffLength, block.length));
+                        if (debugMode) System.out.print(new String(block, 0, x));
+                    }
 
                     try { buffLength = stderr.available(); }
                     catch (IOException e)
@@ -98,7 +105,11 @@ public class StdoutCleaner extends Thread
                         }
                         break;
                     }
-                    if (buffLength > 0) stderr.read(block, 0, Math.min(buffLength, block.length));
+                    if (buffLength > 0)
+                    {
+                        int x = stderr.read(block, 0, Math.min(buffLength, block.length));
+                        if (debugMode) System.out.print(new String(block, 0, x));
+                    }
                 }
 
                 synchronized (lock)
