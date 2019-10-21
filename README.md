@@ -52,6 +52,7 @@ ffmpeg的输入端，可以是stdin、网络流、文件（图片或视频）等
 3. 测试使用`nginx-http-flv-module`+`flv.js`来做网页播放，效果很不错，延迟低，不依赖于flash，值得推荐。
 4. 音频不关注也没有测试，如果有很强的音视频同步传输的需求的话，可以考虑修改程序，将RTP消息包里的音频单独拆分出来，处理后也通过`ffmpeg`子进程合并音轨到视频流中去（我瞎想的）。
 5. RTMP测试工具：[live_test.swf](http://www.cutv.com/demo/live_test.swf)，注意：要使用IE浏览器打开。
+6. `no such publisher`报错，通常是由于`ffmpeg`路径配置错误或是`rtmp`推流失败而导致子进程提前退出而引起的，需要确定`ffmpeg`路径配置及`rtmp`服务器是否正确配置。
 
 ### 交流讨论
 QQ群：808432702
