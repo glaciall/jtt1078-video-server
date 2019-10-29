@@ -108,7 +108,7 @@ echo test | ./test
 
 |方法原型|返回值说明|说明|
 |---|---|---|
-|void waitFor()|无|等待子进程退出，如果子进程一直运行，此方法将一直阻塞|
+|int waitFor()|子进程的返回码值，同exitValue()|等待子进程退出，如果子进程一直运行，此方法将一直阻塞|
 |int exitValue()|0表示成功退出，非0表示错误码|获取子进程的返回码值，也就是main方法里return的整型值|
 |InputStream getInputStream()|子进程的stdout|子进程的标准输出流，主进程用来读取子进程的输出|
 |InputStream getErrorStream()|子进程的stderr|子进程的错误输出流，主进程用来读取子进程的错误输出|
