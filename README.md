@@ -62,7 +62,7 @@ ffmpeg的输入端，可以是stdin、网络流、文件（图片或视频）等
 2. 网页端的RTMP播放，之前使用`Aliplayer`，效果很不理想，可以尝试使用`video.js`。
 3. 测试使用`nginx-http-flv-module`+`flv.js`来做网页播放，效果很不错，延迟低，不依赖于flash，值得推荐。
 4. 音频不关注也没有测试，如果有很强的音视频同步传输的需求的话，可以考虑修改程序，将RTP消息包里的音频单独拆分出来，处理后也通过`ffmpeg`子进程合并音轨到视频流中去（我瞎想的）。
-5. RTMP测试工具：[live_test.swf](http://www.cutv.com/demo/live_test.swf)，注意：要使用IE浏览器打开。
+5. RTMP测试工具：[live_test.swf](http://tool.hentai.org.cn/rtmp/)，具有对RTMP流媒体延迟与缓冲测试等功能，RTMP测试必备工具。
 6. `no such publisher`报错，通常是由于`ffmpeg`路径配置错误或是`rtmp`推流失败而导致子进程提前退出而引起的，需要确定`ffmpeg`路径配置及`rtmp`服务器是否正确配置。
 
 ### 其它语言实现
@@ -78,7 +78,7 @@ ffmpeg的输入端，可以是stdin、网络流、文件（图片或视频）等
 
 int main(int argc, char** argv)
 {
-	char data[1024];
+    char data[1024];
     memset(data, 0, 1024);			// 初始化data数组
     
     fgets(data, 1024, stdin);		// 从stdin里读取一行内容，最多1024字节
@@ -96,13 +96,13 @@ int main(int argc, char** argv)
 gcc test.c -o test
 
 # 测试一下
-echo test | ./test
+echo abc | ./test
 
-# 控制台上将输出">test"，如果没有管道后面的内容，将输出"test"，在这里我们的管道负责把前一个的输出交给我们的test应用程序的stdin，我们自己的应用程序里可以随意的处理stdin读取到的内容
+# 控制台上将输出">abc"，如果没有管道后面的内容，将只输出"abc"，在这里我们的管道负责把前一个的输出交给我们的test应用程序的stdin，我们自己的应用程序里可以随意的处理stdin读取到的内容
 ```
 
 #### 主进程与子进程的交互
-当我们在我们自己的应用程序里，启动一个子进程时，通知编程语言本身也会提供对于子进程的`stdio`的读写的API，各位请自行搜索“编码语言 子进程 stdin”等关键词，了解自己所使用的编程语言的相关API。
+当我们在我们自己的应用程序里，启动一个子进程时，通常编程语言本身也会提供对于子进程的`stdio`的读写的API，各位请自行搜索“编码语言 子进程 stdin”等关键词，了解自己所使用的编程语言的相关API。
 
 以Java为例，`Process`类为子进程运行时交互的API，它由`Runtime.getRuntime().exec()`方法来启动子进程从而获得`Process`子进程实例的引用，它提供了如下几个方法，用于与子进程的交互：
 
