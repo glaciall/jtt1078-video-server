@@ -157,14 +157,16 @@ public final class PublisherManager
 
         public void open(String rtmpURL) throws Exception
         {
-            process = Runtime.getRuntime().exec(String.format("%s -i - -c copy -f flv %s", Configs.get("ffmpeg.path"), rtmpURL));
+            boolean debugMode = "true".equalsIgnoreCase(Configs.get("ffmpeg.debug"));
+
+            process = Runtime.getRuntime().exec(String.format("%s %s -i - -c copy -f flv %s", Configs.get("ffmpeg.path"), debugMode ? "" : "-loglevel quiet", rtmpURL));
             //-------------------------------------------------------^-----------------------------------------------------------
             //-------------------------------------------------------^-----------------------------------------------------------
             //-------------------------------------------------------^-----------------------------------------------------------
             //-------------------------------------------------------^这个-表示ffmpeg进程将从stdin读取数据进行转发，避免了对fifo命名管道的依赖
             output = process.getOutputStream();
 
-            StdoutCleaner.getInstance().watch(channel, process);
+            if (debugMode) StdoutCleaner.getInstance().watch(channel, process);
 
             this.start();
         }
