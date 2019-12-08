@@ -28,7 +28,7 @@ public class StdoutCleaner extends Thread
         readyToClose = new LinkedList<>();
 
         setName("stdout-cleaner");
-        debugMode = "true".equalsIgnoreCase(Configs.get("ffmpeg.debug"));
+        debugMode = "on".equalsIgnoreCase(Configs.get("debug.mode"));
     }
 
     public void watch(Long channel, Process process)

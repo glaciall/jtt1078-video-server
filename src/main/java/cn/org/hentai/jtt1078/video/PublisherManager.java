@@ -5,14 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -157,17 +151,9 @@ public final class PublisherManager
 
         public void open(String rtmpURL) throws Exception
         {
-            boolean debugMode = "true".equalsIgnoreCase(Configs.get("ffmpeg.debug"));
-
-            process = Runtime.getRuntime().exec(String.format("%s %s -i - -c copy -f flv %s", Configs.get("ffmpeg.path"), debugMode ? "" : "-loglevel quiet", rtmpURL));
-            //-------------------------------------------------------^-----------------------------------------------------------
-            //-------------------------------------------------------^-----------------------------------------------------------
-            //-------------------------------------------------------^-----------------------------------------------------------
-            //-------------------------------------------------------^这个-表示ffmpeg进程将从stdin读取数据进行转发，避免了对fifo命名管道的依赖
+            process = Runtime.getRuntime().exec(String.format("%s --fifo-path=%s --rtmp-url=%s", Configs.get("jtt1078.path"), Configs.get("fifo.path") + File.separator + UUID.randomUUID().toString().replaceAll("\\-", ""), rtmpURL));
             output = process.getOutputStream();
-
-            if (debugMode) StdoutCleaner.getInstance().watch(channel, process);
-
+            StdoutCleaner.getInstance().watch(channel, process);
             this.start();
         }
 
