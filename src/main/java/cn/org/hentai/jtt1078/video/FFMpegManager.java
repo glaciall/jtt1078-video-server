@@ -4,7 +4,6 @@ import cn.org.hentai.jtt1078.util.Configs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -12,16 +11,16 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by matrixy on 2019/4/10.
  */
-public final class PublisherManager
+public final class FFMpegManager
 {
-    static Logger logger = LoggerFactory.getLogger(PublisherManager.class);
+    static Logger logger = LoggerFactory.getLogger(FFMpegManager.class);
 
     static final AtomicLong sequence = new AtomicLong(0L);
 
     Map<Long, Publisher> publishers;
     Object lock;
 
-    private PublisherManager()
+    private FFMpegManager()
     {
         lock = new Object();
         publishers = new HashMap<Long, Publisher>();
@@ -58,7 +57,7 @@ public final class PublisherManager
     }
 
     // 转发H264数据到ffmpeg子进程
-    public void publish(long id, byte[] data) throws Exception
+    public void feed(long id, byte[] data) throws Exception
     {
         Publisher publisher = publishers.get(id);
         if (null == publisher)
@@ -116,10 +115,10 @@ public final class PublisherManager
         }
     }
 
-    static PublisherManager instance;
-    public static synchronized PublisherManager getInstance()
+    static FFMpegManager instance;
+    public static synchronized FFMpegManager getInstance()
     {
-        if (null == instance) instance = new PublisherManager();
+        if (null == instance) instance = new FFMpegManager();
         return instance;
     }
 
@@ -151,9 +150,11 @@ public final class PublisherManager
 
         public void open(String rtmpURL) throws Exception
         {
-            process = Runtime.getRuntime().exec(String.format("%s --fifo-path=%s --rtmp-url=%s", Configs.get("jtt1078.path"), Configs.get("fifo.path") + File.separator + UUID.randomUUID().toString().replaceAll("\\-", ""), rtmpURL));
+            process = Runtime.getRuntime().exec(
+                    String.format("%s -re -i - -c copy -f flv -", Configs.get("ffmpeg.path")));
             output = process.getOutputStream();
-            StdoutCleaner.getInstance().watch(channel, process);
+            // TODO：写入了多少祯，读到了多少个FLV封包？
+            // StdoutCleaner.getInstance().watch(channel, process);
             this.start();
         }
 
@@ -220,7 +221,7 @@ public final class PublisherManager
             }
             catch(Exception ex)
             {
-                // logger.error("close publish channel failed", ex);
+                // logger.error("close feed channel failed", ex);
             }
             try { if (output != null) output.close(); } catch(Exception e) { }
             process = null;

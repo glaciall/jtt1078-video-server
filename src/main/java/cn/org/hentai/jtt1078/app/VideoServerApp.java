@@ -3,7 +3,7 @@ package cn.org.hentai.jtt1078.app;
 import cn.org.hentai.jtt1078.server.Jtt1078Handler;
 import cn.org.hentai.jtt1078.server.Jtt1078MessageDecoder;
 import cn.org.hentai.jtt1078.util.Configs;
-import cn.org.hentai.jtt1078.video.PublisherManager;
+import cn.org.hentai.jtt1078.video.FFMpegManager;
 import cn.org.hentai.jtt1078.video.StdoutCleaner;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -30,7 +30,7 @@ public class VideoServerApp
     public static void main(String[] args) throws Exception
     {
         Configs.init("/app.properties");
-        PublisherManager.getInstance().init();
+        FFMpegManager.getInstance().init();
         StdoutCleaner.init();
 
         Signal.handle(new Signal("TERM"), new SignalHandler()
@@ -77,7 +77,7 @@ public class VideoServerApp
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
 
-            PublisherManager.getInstance().shutdown();
+            FFMpegManager.getInstance().shutdown();
 
             System.out.println("program exited...");
         }

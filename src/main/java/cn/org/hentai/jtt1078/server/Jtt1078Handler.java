@@ -1,9 +1,8 @@
 package cn.org.hentai.jtt1078.server;
 
-import cn.org.hentai.jtt1078.util.ByteUtils;
 import cn.org.hentai.jtt1078.util.Configs;
 import cn.org.hentai.jtt1078.util.Packet;
-import cn.org.hentai.jtt1078.video.PublisherManager;
+import cn.org.hentai.jtt1078.video.FFMpegManager;
 import cn.org.hentai.jtt1078.video.StdoutCleaner;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -12,9 +11,7 @@ import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Iterator;
-import java.util.Map;
 
 /**
  * Created by matrixy on 2019/4/9.
@@ -47,14 +44,17 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         Long publisherId = session.get(channelKey);
         if (publisherId == null)
         {
-            publisherId = PublisherManager.getInstance().request(rtmpURL);
+            publisherId = FFMpegManager.getInstance().request(rtmpURL);
             if (publisherId == -1) throw new RuntimeException("exceed max concurrent stream pushing limitation");
             session.set(channelKey, publisherId);
 
             logger.info("start streaming to {}", rtmpURL);
         }
 
-        PublisherManager.getInstance().publish(publisherId, packet.getBytes());
+        int sequence = 0;
+        // 1. 做好序号
+        // 2. 音频需要转码后提供订阅
+        FFMpegManager.getInstance().feed(publisherId, packet.getBytes());
     }
 
     public final Session getSession()
@@ -97,7 +97,7 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
                     {
                         long channel = Long.parseLong(val.toString());
 
-                        PublisherManager.getInstance().close(channel);
+                        FFMpegManager.getInstance().close(channel);
                         StdoutCleaner.getInstance().unwatch(channel);
                     }
                 }
