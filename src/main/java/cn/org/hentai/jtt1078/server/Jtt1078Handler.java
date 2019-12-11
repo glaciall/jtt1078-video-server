@@ -1,5 +1,7 @@
 package cn.org.hentai.jtt1078.server;
 
+import cn.org.hentai.jtt1078.publisher.PublishManager;
+import cn.org.hentai.jtt1078.publisher.entity.Audio;
 import cn.org.hentai.jtt1078.util.Configs;
 import cn.org.hentai.jtt1078.util.Packet;
 import cn.org.hentai.jtt1078.video.FFMpegManager;
@@ -52,9 +54,23 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         }
 
         int sequence = 0;
+        String tag = sim + "-" + channel;
         // 1. 做好序号
         // 2. 音频需要转码后提供订阅
-        FFMpegManager.getInstance().feed(publisherId, packet.getBytes());
+        int lengthOffset = 28;
+        int dataType = (packet.seek(15).nextByte() >> 4) & 0x0f;
+        // 透传数据类型：0100，没有后面的时间以及Last I Frame Interval和Last Frame Interval字段
+        if (dataType == 0x04) lengthOffset = 28 - 8 - 2 - 2;
+        else if (dataType == 0x03) lengthOffset = 28 - 4;
+
+        if (dataType == 0x00 || dataType == 0x01 || dataType == 0x02)
+        {
+            FFMpegManager.getInstance().feed(publisherId, packet.seek(lengthOffset + 2).nextBytes());
+        }
+        else if (dataType == 0x03)
+        {
+            PublishManager.getInstance().publish(tag, new Audio(packet.seek(lengthOffset + 2).nextBytes()));
+        }
     }
 
     public final Session getSession()

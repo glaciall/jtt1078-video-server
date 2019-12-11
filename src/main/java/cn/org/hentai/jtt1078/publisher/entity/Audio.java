@@ -3,10 +3,10 @@ package cn.org.hentai.jtt1078.publisher.entity;
 /**
  * Created by houcheng on 2019-12-11.
  */
-public class Audio extends Stream
+public class Audio extends Media
 {
-    public Audio()
+    public Audio(byte[] data)
     {
-        super(Type.audio);
+        super(Type.audio, data);
     }
 }
