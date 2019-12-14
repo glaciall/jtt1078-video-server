@@ -1,10 +1,10 @@
 package cn.org.hentai.jtt1078.server;
 
-import cn.org.hentai.jtt1078.util.ByteUtils;
+import cn.org.hentai.jtt1078.media.Media;
 import cn.org.hentai.jtt1078.util.Configs;
 import cn.org.hentai.jtt1078.util.Packet;
-import cn.org.hentai.jtt1078.video.PublisherManager;
-import cn.org.hentai.jtt1078.video.StdoutCleaner;
+import cn.org.hentai.jtt1078.media.PublisherManager;
+import cn.org.hentai.jtt1078.media.StdoutCleaner;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.Attribute;
@@ -12,9 +12,7 @@ import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Iterator;
-import java.util.Map;
 
 /**
  * Created by matrixy on 2019/4/9.
@@ -35,7 +33,6 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
 
         // 因为FFMPEG推送有缓冲，所以在停止后又立即发起视频推送是会出现推送通道冲突的情况
         // 所以最好能够每次都分配到新的rtmp通道上去
-        String rtmpURL = Configs.get("rtmp.format").replace("{sim}", sim).replace("{channel}", String.valueOf(channel));
 
         Session session = getSession();
         if (null == session)
@@ -47,6 +44,7 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         Long publisherId = session.get(channelKey);
         if (publisherId == null)
         {
+            String rtmpURL = Configs.get("rtmp.format").replace("{sim}", sim).replace("{channel}", String.valueOf(channel));
             publisherId = PublisherManager.getInstance().request(rtmpURL);
             if (publisherId == -1) throw new RuntimeException("exceed max concurrent stream pushing limitation");
             session.set(channelKey, publisherId);
@@ -54,13 +52,22 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
             logger.info("start streaming to {}", rtmpURL);
         }
 
+        int pt = packet.seek(5).nextByte() & 0x7f;
+
         int lengthOffset = 28;
         int dataType = (packet.seek(15).nextByte() >> 4) & 0x0f;
         // 透传数据类型：0100，没有后面的时间以及Last I Frame Interval和Last Frame Interval字段
         if (dataType == 0x04) lengthOffset = 28 - 8 - 2 - 2;
         else if (dataType == 0x03) lengthOffset = 28 - 4;
 
-        PublisherManager.getInstance().publish(publisherId, packet.seek(lengthOffset + 2).nextBytes());
+        Media.Type mediaType = Media.getType(dataType);
+        if (mediaType.equals(Media.Type.Unknown))
+        {
+            logger.error("unknown media type");
+            return;
+        }
+        Media.Encoding mediaEncoding = Media.getEncoding(mediaType, pt);
+        PublisherManager.getInstance().publish(publisherId, mediaType, mediaEncoding, packet.seek(lengthOffset + 2).nextBytes());
     }
 
     public final Session getSession()

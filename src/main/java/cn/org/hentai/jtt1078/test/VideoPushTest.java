@@ -1,5 +1,6 @@
 package cn.org.hentai.jtt1078.test;
 
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -14,14 +15,14 @@ public class VideoPushTest
         Socket conn = new Socket("localhost", 1078);
         OutputStream os = conn.getOutputStream();
 
-        InputStream fis = VideoPushTest.class.getResourceAsStream("/tcpdump.bin");
+        InputStream fis = new FileInputStream("e:\\workspace\\enc_dec_audio\\streamax.bin"); // VideoPushTest.class.getResourceAsStream("/tcpdump.bin");
         int len = -1;
         byte[] block = new byte[512];
         while ((len = fis.read(block)) > -1)
         {
             os.write(block, 0, len);
             os.flush();
-            Thread.sleep(10);
+            Thread.sleep(30);
             System.out.println("sending...");
         }
         os.close();

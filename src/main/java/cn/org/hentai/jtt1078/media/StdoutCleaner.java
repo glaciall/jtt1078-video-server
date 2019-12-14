@@ -1,4 +1,4 @@
-package cn.org.hentai.jtt1078.video;
+package cn.org.hentai.jtt1078.media;
 
 import cn.org.hentai.jtt1078.util.Configs;
 import org.slf4j.Logger;
@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.*;
 
 /**
