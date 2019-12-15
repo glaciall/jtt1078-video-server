@@ -1,23 +1,18 @@
 package cn.org.hentai.jtt1078.audio;
 
 public final class ADPCMCodec {
-    static int[] indexTable = { -1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8 };
+    private static final int[] indexTable = {-1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8};
 
-    static int[] stepsizeTable = { 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55,
-            60, 66, 73, 80, 88, 97, 107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449, 494,
-            544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878, 2066, 2272, 2499, 2749, 3024,
-            3327, 3660, 4026, 4428, 4871, 5358, 5894, 6484, 7132, 7845, 8630, 9493, 10442, 11487, 12635, 13899, 15289,
-            16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767 };
+    private static final int[] stepsizeTable = {7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55,
+                                                60, 66, 73, 80, 88, 97, 107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449, 494,
+                                                544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878, 2066, 2272, 2499, 2749, 3024,
+                                                3327, 3660, 4026, 4428, 4871, 5358, 5894, 6484, 7132, 7845, 8630, 9493, 10442, 11487, 12635, 13899, 15289,
+                                                16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767};
 
-    static class ADPCMState
-    {
-        public short valprev;
-        public byte index;
-    }
+    public static byte[] adpcm_coder(short[] inData, int startIndex, int inLength, ADPCMState state) {
 
-    byte[] adpcm_coder(short[] inp, int len, ADPCMState state) {
         // short *inp; /* Input buffer pointer */
-        byte outp[]; /* output buffer pointer */
+        //byte outp[]; /* output buffer pointer */
         int val; /* Current input sample value */
         int sign; /* Current adpcm sign bit */
         int delta; /* Current adpcm output value */
@@ -29,17 +24,17 @@ public final class ADPCMCodec {
         int outputbuffer = 0; /* place to keep previous 4-bit value */
         boolean bufferstep; /* toggle between outputbuffer/output */
 
-        outp = new byte[len / 2];
-
+        byte[] outData = new byte[inLength / 2];
+        int len = inLength;
         valpred = state.valprev;
         index = state.index;
         step = stepsizeTable[index];
 
         bufferstep = true;
 
-        int intIndex = 0, outIndex = 0;
+        int outIndex = 0;
         for (; len > 0; len--) {
-            val = inp[intIndex++];
+            val = inData[startIndex++];
 
             /* Step 1 - compute difference with previous value */
             diff = val - valpred;
@@ -100,21 +95,21 @@ public final class ADPCMCodec {
             if (bufferstep) {
                 outputbuffer = (delta << 4) & 0xf0;
             } else {
-                outp[outIndex++] = (byte) ((delta & 0x0f) | outputbuffer);
+                outData[outIndex++] = (byte) ((delta & 0x0f) | outputbuffer);
             }
             bufferstep = !bufferstep;
         }
 
         /* Output last step, if needed */
         if (!bufferstep)
-            outp[outIndex++] = (byte) outputbuffer;
+            outData[outIndex++] = (byte) outputbuffer;
 
         state.valprev = (short) valpred;
         state.index = (byte) index;
-        return outp;
+        return outData;
     }
 
-    public static short[] adpcm_decoder(byte[] inp, int len, ADPCMState state) {
+    public static short[] adpcm_decoder(byte[] inData, int startIndex, int inLength, ADPCMState state) {
         // signed char *inp; /* Input buffer pointer */
         // short *outp; /* output buffer pointer */
         int sign; /* Current adpcm sign bit */
@@ -126,22 +121,21 @@ public final class ADPCMCodec {
         int inputbuffer = 0; /* place to keep next 4-bit value */
         boolean bufferstep; /* toggle between inputbuffer/input */
 
-        short[] outp = new short[len];
-        // inp = (signed char *)indata;
-
+        int len = inLength * 2;
+        int outIndex = 0;
+        short[] outData = new short[len];
         valpred = state.valprev;
         index = state.index;
         step = stepsizeTable[index];
-
         bufferstep = false;
 
-        for (int inIndex = 0, outIndex = 0; len > 0; len--) {
+        for (; len > 0; len--) {
 
             /* Step 1 - get the delta value */
             if (bufferstep) {
                 delta = inputbuffer & 0xf;
             } else {
-                inputbuffer = inp[inIndex++];
+                inputbuffer = inData[startIndex++];
                 delta = (inputbuffer >> 4) & 0xf;
             }
             bufferstep = !bufferstep;
@@ -184,11 +178,25 @@ public final class ADPCMCodec {
             step = stepsizeTable[index];
 
             /* Step 7 - Output value */
-            outp[outIndex++] = (short) valpred;
+            outData[outIndex++] = (short) valpred;
         }
 
         state.valprev = (short) valpred;
         state.index = (byte) index;
-        return outp;
+        return outData;
+    }
+
+    static class ADPCMState
+    {
+        public short valprev;
+        public byte index;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        ADPCMState state = new ADPCMState();
+        state.index = 1;
+        state.valprev = 1;
+        // short[] data = ADPCMCodec.adpcm_decoder(null, 0, xx, state);
     }
 }
