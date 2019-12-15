@@ -31,6 +31,19 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
         if (uri.startsWith("/video/"))
         {
             String tag = uri.substring(7);
+
+            resp.addBytes("HTTP/1.1 200 OK\r\n".getBytes(HEADER_ENCODING));
+            resp.addBytes("Connection: keep-alive\r\n".getBytes(HEADER_ENCODING));
+            resp.addBytes("Transfer-Encoding: chunked\r\n".getBytes(HEADER_ENCODING));
+            resp.addBytes("Cache-Control: no-cache\r\n".getBytes(HEADER_ENCODING));
+            resp.addBytes("Access-Control-Allow-Origin: *\r\n".getBytes(HEADER_ENCODING));
+            resp.addBytes("Access-Control-Allow-Credentials: true\r\n".getBytes(HEADER_ENCODING));
+            resp.addBytes("\r\n".getBytes(HEADER_ENCODING));
+
+            ctx.writeAndFlush(resp.getBytes());
+
+            // 订阅视频数据
+            PublishManager.getInstance().subscribe(tag, ctx);
         }
         else if (uri.startsWith("/audio/"))
         {
@@ -38,9 +51,10 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
 
             resp.addBytes("HTTP/1.1 200 OK\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("Connection: keep-alive\r\n".getBytes(HEADER_ENCODING));
-            resp.addBytes("Content-Type: application/json\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("Transfer-Encoding: chunked\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("Cache-Control: no-cache\r\n".getBytes(HEADER_ENCODING));
+            resp.addBytes("Access-Control-Allow-Origin: *\r\n".getBytes(HEADER_ENCODING));
+            resp.addBytes("Access-Control-Allow-Credentials: true\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("\r\n".getBytes(HEADER_ENCODING));
 
             ctx.writeAndFlush(resp.getBytes());
@@ -73,3 +87,4 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
         cause.printStackTrace();
     }
 }
+

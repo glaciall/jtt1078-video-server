@@ -5,10 +5,14 @@ package cn.org.hentai.jtt1078.publisher.entity;
  */
 public class Video extends Media
 {
+    public static enum FlvType { Header, Description, Tag };
+
     public boolean isKeyFrame;
-    public Video(boolean isKeyFrame, byte[] data)
+    public FlvType flvType;
+    public Video(FlvType flvType, byte[] data)
     {
-        super(Type.video, data);
-        this.isKeyFrame = isKeyFrame;
+        super(Media.Type.video, data);
+        this.flvType = flvType;
+        this.isKeyFrame = ((data[11] >> 4) & 0x0f) == 1;
     }
 }

@@ -15,7 +15,12 @@ public final class ByteUtils
 
     public static synchronized void dump(byte[] data)
     {
-        for (int i = 0, l = data.length; i < l; )
+        dump(data, data.length);
+    }
+
+    public static synchronized void dump(byte[] data, int len)
+    {
+        for (int i = 0, l = len; i < l; )
         {
             String ascii = "";
             int k = 0, f = 0;

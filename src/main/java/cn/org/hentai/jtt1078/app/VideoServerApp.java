@@ -2,6 +2,7 @@ package cn.org.hentai.jtt1078.app;
 
 import cn.org.hentai.jtt1078.http.GeneralResponseWriter;
 import cn.org.hentai.jtt1078.http.NettyHttpServerHandler;
+import cn.org.hentai.jtt1078.publisher.PublishManager;
 import cn.org.hentai.jtt1078.server.Jtt1078Handler;
 import cn.org.hentai.jtt1078.server.Jtt1078MessageDecoder;
 import cn.org.hentai.jtt1078.util.Configs;
@@ -32,6 +33,7 @@ public class VideoServerApp
         Configs.init("/app.properties");
         FFMpegManager.getInstance().init();
         StdoutCleaner.init();
+        PublishManager.init();
 
         VideoServer videoServer = new VideoServer();
         HttpServer httpServer = new HttpServer();

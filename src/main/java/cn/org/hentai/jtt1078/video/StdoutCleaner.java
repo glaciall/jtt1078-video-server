@@ -77,25 +77,9 @@ public class StdoutCleaner extends Thread
                     }
 
                     // 清理一下输出流
-                    InputStream stdout = process.getInputStream();
                     InputStream stderr = process.getErrorStream();
 
                     int buffLength = 0;
-                    try { buffLength = stdout.available(); }
-                    catch (IOException e)
-                    {
-                        synchronized (lock)
-                        {
-                            readyToClose.add(channel);
-                        }
-                        break;
-                    }
-                    if (buffLength > 0)
-                    {
-                        int x = stdout.read(block, 0, Math.min(buffLength, block.length));
-                        if (debugMode) System.out.print(new String(block, 0, x));
-                    }
-
                     try { buffLength = stderr.available(); }
                     catch (IOException e)
                     {

@@ -43,10 +43,11 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         }
 
         String channelKey = String.format("publisher-%d", channel);
+        String tag = sim + "-" + channel;
         Long publisherId = session.get(channelKey);
         if (publisherId == null)
         {
-            publisherId = FFMpegManager.getInstance().request(rtmpURL);
+            publisherId = FFMpegManager.getInstance().request(tag, rtmpURL);
             if (publisherId == -1) throw new RuntimeException("exceed max concurrent stream pushing limitation");
             session.set(channelKey, publisherId);
 
@@ -54,7 +55,6 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         }
 
         int sequence = 0;
-        String tag = sim + "-" + channel;
         // 1. 做好序号
         // 2. 音频需要转码后提供订阅
         int lengthOffset = 28;
@@ -69,7 +69,8 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         }
         else if (dataType == 0x03)
         {
-            PublishManager.getInstance().publish(tag, new Audio(packet.seek(lengthOffset + 2).nextBytes()));
+            // TODO: 暂时屏蔽掉音频
+            // PublishManager.getInstance().publish(tag, new Audio(packet.seek(lengthOffset + 2).nextBytes()));
         }
     }
 

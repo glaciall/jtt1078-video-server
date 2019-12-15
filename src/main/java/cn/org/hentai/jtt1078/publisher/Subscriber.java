@@ -29,6 +29,7 @@ public class Subscriber extends Thread
         this.currentIndex = -1L;
         this.ctx = ctx;
         this.lock = new Object();
+        this.messages = new LinkedList<Media>();
     }
 
     public void aware(Media message)

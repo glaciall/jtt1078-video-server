@@ -20,6 +20,12 @@ public final class PublishManager
     ConcurrentHashMap<String, ConcurrentLinkedDeque<Media>> channelMap;
     ConcurrentHashMap<String, ConcurrentLinkedQueue<Subscriber>> subscriberMap;
 
+    private PublishManager()
+    {
+        channelMap = new ConcurrentHashMap<String, ConcurrentLinkedDeque<Media>>();
+        subscriberMap = new ConcurrentHashMap<String, ConcurrentLinkedQueue<Subscriber>>();
+    }
+
     // 1. 订阅是怎么订阅的？
 
     // 2. 需要持续持有关键祯
@@ -57,6 +63,7 @@ public final class PublishManager
         }
 
         // 如果是视频关键祯，则删除掉前面的缓存祯
+        /*
         if (media.type.equals(Media.Type.video))
         {
             Video video = (Video)media;
@@ -69,13 +76,17 @@ public final class PublishManager
                 }
             }
         }
+        */
 
-        medias.addLast(media);
+        // medias.addLast(media);
 
         // 广播到所有的订阅者，直接发，先不等待关键祯
-        System.out.println("ready to broadcast...");
-
         ConcurrentLinkedQueue<Subscriber> listeners = subscriberMap.get(tag);
+        if (listeners == null)
+        {
+            listeners = new ConcurrentLinkedQueue<Subscriber>();
+            subscriberMap.put(tag, listeners);
+        }
         for (Subscriber listener : listeners)
         {
             try
