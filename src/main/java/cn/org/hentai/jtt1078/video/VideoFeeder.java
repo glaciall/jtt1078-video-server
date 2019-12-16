@@ -37,10 +37,9 @@ public class VideoFeeder extends Thread
     public void open(String tag, String rtmpURL) throws Exception
     {
         process = Runtime.getRuntime().exec(
-                String.format("%s -re -i - -c copy -f flv -", Configs.get("ffmpeg.path")));
+                String.format("%s -probesize 1024 -loglevel debug -re -i - -c copy -f flv -", Configs.get("ffmpeg.path")));
         output = process.getOutputStream();
         new VideoPublisher(tag, process.getInputStream()).start();
-        // TODO：写入了多少祯，读到了多少个FLV封包？
         StdoutCleaner.getInstance().watch(channel, process);
         this.start();
     }

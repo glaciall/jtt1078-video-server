@@ -1,6 +1,7 @@
 package cn.org.hentai.jtt1078.publisher;
 
 import cn.org.hentai.jtt1078.publisher.entity.Media;
+import cn.org.hentai.jtt1078.util.FLVUtils;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,8 @@ public class Subscriber extends Thread
 
     public void run()
     {
+        long lastAwareTime = System.currentTimeMillis();
+        int timestamp = 0;
         while (!this.isInterrupted())
         {
             try
@@ -52,11 +55,19 @@ public class Subscriber extends Thread
                 {
                     while (messages.size() == 0) lock.wait(1000);
                     media = messages.removeFirst();
+                    if (lastAwareTime == 0L) lastAwareTime = System.currentTimeMillis();
                 }
 
+                long duration = System.currentTimeMillis() - lastAwareTime;
+                timestamp += duration;
+
                 ctx.writeAndFlush(String.format("%x\r\n", media.data.length).getBytes());
-                ctx.writeAndFlush(media.data);
+                ctx.writeAndFlush(FLVUtils.resetTimestamp(media.data, timestamp));
                 ctx.writeAndFlush("\r\n".getBytes());
+
+                // System.out.println(String.format("timestamp = %8d", timestamp));
+
+                lastAwareTime = System.currentTimeMillis();
             }
             catch(Exception ex)
             {

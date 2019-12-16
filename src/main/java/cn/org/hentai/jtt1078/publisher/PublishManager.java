@@ -49,36 +49,30 @@ public final class PublishManager
         listeners.add(subscriber);
         subscriber.start();
 
-        // TODO: 先取一个完整的关键祯序列下来，怎么锁？
+        // 如果已经有视频流了，那就把前三个关键片断发过去
+        ConcurrentLinkedDeque<Media> segments = channelMap.get(tag);
+        if (segments != null)
+        {
+            int i = 0;
+            for (Media media : segments)
+            {
+                if (i++ == 3) break;
+                subscriber.aware(media);
+            }
+        }
     }
 
     public void publish(String tag, Media media)
     {
-        // 是不是考虑不做缓存？
-        ConcurrentLinkedDeque<Media> medias = channelMap.get(tag);
-        if (medias == null)
+        ConcurrentLinkedDeque<Media> segments = channelMap.get(tag);
+        if (segments == null)
         {
-            medias = new ConcurrentLinkedDeque<Media>();
-            channelMap.put(tag, medias);
+            segments = new ConcurrentLinkedDeque<Media>();
+            channelMap.put(tag, segments);
         }
 
-        // 如果是视频关键祯，则删除掉前面的缓存祯
-        /*
-        if (media.type.equals(Media.Type.video))
-        {
-            Video video = (Video)media;
-            if (video.isKeyFrame)
-            {
-                while (medias.size() > 0)
-                {
-                    Media m = medias.removeFirst();
-                    if (m == null) break;
-                }
-            }
-        }
-        */
-
-        // medias.addLast(media);
+        // 只用缓存前三个消息包就可以了
+        if (segments.size() < 3) segments.addLast(media);
 
         // 广播到所有的订阅者，直接发，先不等待关键祯
         ConcurrentLinkedQueue<Subscriber> listeners = subscriberMap.get(tag);
