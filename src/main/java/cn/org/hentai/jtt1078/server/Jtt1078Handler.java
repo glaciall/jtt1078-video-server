@@ -47,7 +47,7 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         Long publisherId = session.get(channelKey);
         if (publisherId == null)
         {
-            publisherId = FFMpegManager.getInstance().request(tag, rtmpURL);
+            publisherId = FFMpegManager.getInstance().request("video-" + tag, rtmpURL);
             if (publisherId == -1) throw new RuntimeException("exceed max concurrent stream pushing limitation");
             session.set(channelKey, publisherId);
 
@@ -70,7 +70,7 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         else if (dataType == 0x03)
         {
             // TODO: 暂时屏蔽掉音频
-            // PublishManager.getInstance().publish(tag, new Audio(packet.seek(lengthOffset + 2).nextBytes()));
+            PublishManager.getInstance().publish("audio-" + tag, new Audio(packet.seek(lengthOffset + 2).nextBytes()));
         }
     }
 

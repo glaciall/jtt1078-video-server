@@ -1,0 +1,51 @@
+<html>
+	<head>
+		<title>Chunked Audio Test</title>
+	</head>
+	<body>
+	</body>
+</html>
+<script src="//static.transnova.com.cn//assets/global/plugins/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+	var streamOffset = 0;
+
+	window.AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext || window.msAudioContext;
+	var audioContext = new AudioContext();
+	var audioSourceNode = audioContext.createBufferSource();
+
+	$(document).ready(function()
+	{
+	    var xhr = new XMLHttpRequest();
+	    xhr.open('GET', '/audio/1111111111111111', true);
+        xhr.onprogress = function()
+        {
+            var textBuffer = xhr.responseText;
+            var arrayBuffer = textToArrayBuffer(textBuffer, streamOffset);
+            streamOffset += arrayBuffer.byteLength;
+
+			audioContext.decodeAudioData(arrayBuffer, function(buffer)
+			{
+                var audioBufferSouceNode = audioContext.createBufferSource();
+                audioBufferSouceNode.buffer = buffer;
+                // audioBufferSouceNode.start(0);
+                audioBufferSouceNode.connect(audioContext.destination);
+                audioBufferSouceNode.start(0);
+            });
+        }
+        xhr.send();
+	});
+
+	function textToArrayBuffer(textBuffer, startOffset)
+	{
+	    var len = textBuffer.length - startOffset;
+		var arrayBuffer = new ArrayBuffer(len);
+		var ui8a = new Uint8Array(arrayBuffer, 0);
+		for (var i = 0, j = startOffset; i < len; i++, j++)
+		{
+		    ui8a[i] = (textBuffer.charCodeAt(j) & 0xff);
+		}
+		return arrayBuffer;
+	}
+
+</script>

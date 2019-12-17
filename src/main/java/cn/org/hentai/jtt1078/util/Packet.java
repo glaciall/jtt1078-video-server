@@ -157,8 +157,13 @@ public class Packet
 
     public Packet addBytes(byte[] b)
     {
-        System.arraycopy(b, 0, this.data, size, b.length);
-        size += b.length;
+        return addBytes(b, b.length);
+    }
+
+    public Packet addBytes(byte[] b, int len)
+    {
+        System.arraycopy(b, 0, this.data, size, len);
+        size += len;
         return this;
     }
 
@@ -235,6 +240,14 @@ public class Packet
     public Packet seek(int index)
     {
         this.offset = index;
+        return this;
+    }
+
+    public Packet reset()
+    {
+        this.offset = 0;
+        this.size = 0;
+
         return this;
     }
 
