@@ -61,9 +61,9 @@ public class Subscriber extends Thread
                 long duration = System.currentTimeMillis() - lastAwareTime;
                 timestamp += duration;
 
-                ctx.writeAndFlush(String.format("%x\r\n", media.data.length).getBytes());
-                ctx.writeAndFlush(FLVUtils.resetTimestamp(media.data, timestamp));
-                ctx.writeAndFlush("\r\n".getBytes());
+                ctx.writeAndFlush(String.format("%x\r\n", media.data.length).getBytes()).await();
+                ctx.writeAndFlush(FLVUtils.resetTimestamp(media.data, timestamp)).await();
+                ctx.writeAndFlush("\r\n".getBytes()).await();
 
                 // System.out.println(String.format("timestamp = %8d", timestamp));
 

@@ -1,5 +1,6 @@
 package cn.org.hentai.jtt1078.test;
 
+import cn.org.hentai.jtt1078.util.ByteUtils;
 import cn.org.hentai.jtt1078.util.Packet;
 
 import java.io.FileInputStream;
@@ -20,19 +21,18 @@ public class WAVTest
         {
             p.reset();
             p.addBytes("RIFF".getBytes())
-                    .addInt(len + 36)
-                    .addBytes("WAVE".getBytes())            // wave type
-                    .addBytes("fmt ".getBytes())            // fmt id
-                    .addInt(16)                             // fmt chunk size
-                    .addShort((short)0x0100)                // format: 1 -> PCM
-                    .addShort((short)0x0100)                // channels: 1
-                    .addInt(8000)                           // samples per second
-                    .addInt(1 * 8000 * 16 / 8)              // BPSecond
-                    .addShort((short)(1 * 16 / 8))          // BPSample
-                    .addShort((short)(1 * 16))              // bPSecond
-                    .addByte((byte)0)
-                    .addBytes("data".getBytes())            // data id
-                    .addInt(len);                             // data chunk size
+                    .addBytes(ByteUtils.toLEBytes(len + 36))
+                    .addBytes("WAVE".getBytes())                                    // wave type
+                    .addBytes("fmt ".getBytes())                                    // fmt id
+                    .addInt(0x10000000)                                             // fmt chunk size
+                    .addShort((short)0x0100)                                        // format: 1 -> PCM
+                    .addShort((short)0x0100)                                        // channels: 1
+                    .addBytes(ByteUtils.toLEBytes(8000))                            // samples per second
+                    .addBytes(ByteUtils.toLEBytes(1 * 8000 * 16 / 8))               // BPSecond
+                    .addBytes(ByteUtils.toLEBytes((short)(1 * 16 / 8)))             // BPSample
+                    .addBytes(ByteUtils.toLEBytes((short)(1 * 16)))                 // bPSecond
+                    .addBytes("data".getBytes())                                    // data id
+                    .addBytes(ByteUtils.toLEBytes(len));                            // data chunk size
 
             p.addBytes(block, len);
 

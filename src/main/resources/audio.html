@@ -12,7 +12,26 @@
 
 	window.AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext || window.msAudioContext;
 	var audioContext = new AudioContext();
-	var audioSourceNode = audioContext.createBufferSource();
+	var segments = [];
+	var ended = true;
+
+    function playNextSegment()
+	{
+        if (segments.length > 0 && ended)
+        {
+            ended = false;
+            var audioBufferSouceNode = audioContext.createBufferSource();
+            audioBufferSouceNode.onended = function()
+            {
+                // playNextSegment();
+                ended = true;
+                console.log('play ended...');
+            }
+            audioBufferSouceNode.buffer = segments.shift();
+            audioBufferSouceNode.connect(audioContext.destination);
+            audioBufferSouceNode.start(0);
+        }
+	}
 
 	$(document).ready(function()
 	{
@@ -26,14 +45,11 @@
 
 			audioContext.decodeAudioData(arrayBuffer, function(buffer)
 			{
-                var audioBufferSouceNode = audioContext.createBufferSource();
-                audioBufferSouceNode.buffer = buffer;
-                // audioBufferSouceNode.start(0);
-                audioBufferSouceNode.connect(audioContext.destination);
-                audioBufferSouceNode.start(0);
+                segments.push(buffer);
             });
         }
         xhr.send();
+        setInterval(playNextSegment, 50);
 	});
 
 	function textToArrayBuffer(textBuffer, startOffset)
@@ -41,10 +57,19 @@
 	    var len = textBuffer.length - startOffset;
 		var arrayBuffer = new ArrayBuffer(len);
 		var ui8a = new Uint8Array(arrayBuffer, 0);
+        var hex = [];
 		for (var i = 0, j = startOffset; i < len; i++, j++)
 		{
 		    ui8a[i] = (textBuffer.charCodeAt(j) & 0xff);
+
+            var ch = (ui8a[i] & 0xff).toString(16);
+            hex.push(ch.length == 1 ? '0' + ch : ch);
+            hex.push(' ');
+            if (i % 4 == 3) hex.push("   ");
+            if (i % 16 == 15) hex.push("\n");
 		}
+		console.log(hex.join(''));
+
 		return arrayBuffer;
 	}
 

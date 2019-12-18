@@ -1,9 +1,7 @@
 package cn.org.hentai.jtt1078.http;
 
 import cn.org.hentai.jtt1078.publisher.PublishManager;
-import cn.org.hentai.jtt1078.util.FLVUtils;
-import cn.org.hentai.jtt1078.util.FileUtils;
-import cn.org.hentai.jtt1078.util.Packet;
+import cn.org.hentai.jtt1078.util.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -15,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.InetSocketAddress;
+import java.util.Base64;
 
 /**
  * Created by matrixy on 2019/8/13.
@@ -74,36 +73,26 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
                     try
                     {
                         int len = -1;
-                        byte[] block = new byte[640];
-                        Packet p = Packet.create(1024);
+                        byte[] block = new byte[8192];
+                        Packet p = Packet.create(10240);
 
                         fis = new FileInputStream("d:\\temp\\xxoo.pcm");
                         while ((len = fis.read(block)) > -1)
                         {
                             p.reset();
-                            p.addBytes("RIFF".getBytes())
-                                    .addInt(0)                              // riff chunk size
-                                    .addBytes("WAVE".getBytes())            // wave type
-                                    .addBytes("fmt ".getBytes())            // fmt id
-                                    .addInt(16)                             // fmt chunk size
-                                    .addShort((short)0x0001)                // format: 1 -> PCM
-                                    .addShort((short)0x0001)                // channels: 1
-                                    .addInt(8000)                           // samples per second
-                                    .addInt(1 * 8000 * 16 / 8)              // BPSecond
-                                    .addShort((short)(1 * 16 / 8))          // BPSample
-                                    .addShort((short)(1 * 16))              // bPSecond
-                                    .addBytes("data".getBytes())            // data id
-                                    .addInt(0);                             // data chunk size
-
+                            p.addBytes(WAVUtils.createHeader(len, 1, 8000, 16));
                             p.addBytes(block, len);
 
-                            ctx.writeAndFlush(String.format("%x\r\n", p.size()).getBytes());
-                            ctx.writeAndFlush(p.getBytes());
-                            ctx.writeAndFlush("\r\n".getBytes());
+                            ByteUtils.dump(p.getBytes());
 
-                            System.out.println("发了一块块...");
+                            ctx.writeAndFlush(String.format("%x\r\n", p.size()).getBytes()).await();
+                            ctx.writeAndFlush(p.getBytes()).await();
+                            ctx.writeAndFlush("\r\n".getBytes()).await();
 
-                            Thread.sleep(2000);
+                            System.out.println("发了一块块 --> " + len);
+                            Thread.sleep(10);
+
+                            break;
                         }
 
                         ctx.writeAndFlush(String.format("%x\r\n", 0).getBytes());

@@ -86,6 +86,24 @@ public final class ByteUtils
         return toInt(ret);
     }
 
+    public static byte[] toLEBytes(int val)
+    {
+        byte[] bytes = new byte[4];
+        for (int i = 0; i < 4; i++)
+        {
+            bytes[3 - i] = (byte)(val >> ((3 - i) * 8) & 0xff);
+        }
+        return bytes;
+    }
+
+    public static byte[] toLEBytes(short s)
+    {
+        byte[] bytes = new byte[2];
+        bytes[0] = (byte)(s & 0xff);
+        bytes[1] = (byte)((s >> 8) & 0xff);
+        return bytes;
+    }
+
     public static int toInt(byte[] bytes)
     {
         int val = 0;
