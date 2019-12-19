@@ -9,6 +9,9 @@
 <script type="text/javascript">
 
 	var streamOffset = 0;
+    var Base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.split('');
+    var CharIdxArray = { };
+    for (var i = 0; i < Base64Chars.length; i++) CharIdxArray[Base64Chars[i]] = i;
 
 	window.AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext || window.msAudioContext;
 	var audioContext = new AudioContext();
@@ -35,42 +38,70 @@
 
 	$(document).ready(function()
 	{
+	    var decodeCallback = function(buffer)
+        {
+            segments.push(buffer);
+        };
+
 	    var xhr = new XMLHttpRequest();
 	    xhr.open('GET', '/audio/1111111111111111', true);
         xhr.onprogress = function()
         {
-            var textBuffer = xhr.responseText;
-            var arrayBuffer = textToArrayBuffer(textBuffer, streamOffset);
-            streamOffset += arrayBuffer.byteLength;
-
-			audioContext.decodeAudioData(arrayBuffer, function(buffer)
-			{
-                segments.push(buffer);
-            });
+            var audioData = xhr.responseText;
+			while (true)
+            {
+                var audio = base64Decode(audioData);
+                if (audio == null) break;
+                console.log('decoded: ' + audio.length);
+                audioContext.decodeAudioData(audio.buffer, decodeCallback);
+            }
         }
         xhr.send();
         setInterval(playNextSegment, 50);
 	});
 
-	function textToArrayBuffer(textBuffer, startOffset)
+    function base64Decode(text)
 	{
-	    var len = textBuffer.length - startOffset;
-		var arrayBuffer = new ArrayBuffer(len);
-		var ui8a = new Uint8Array(arrayBuffer, 0);
-        var hex = [];
-		for (var i = 0, j = startOffset; i < len; i++, j++)
-		{
-		    ui8a[i] = (textBuffer.charCodeAt(j) & 0xff);
+        var i, k = 0, l;
+        if (text.length < streamOffset + 8) return null;
+        var blockLength = parseInt(text.substring(streamOffset, streamOffset + 8), 16);
+        console.log('block: ' + blockLength);
+        if (text.length < streamOffset + 8 + blockLength) return null;
 
-            var ch = (ui8a[i] & 0xff).toString(16);
+        var audioBuffer = new Uint8Array(new ArrayBuffer(2048), 0);
+        for (i = streamOffset + 8, l = text.length; i < l && k < blockLength; )
+        {
+            var a = CharIdxArray[text.charAt(i + 0)];
+            var b = CharIdxArray[text.charAt(i + 1)];
+            var c = CharIdxArray[text.charAt(i + 2)];
+            var d = CharIdxArray[text.charAt(i + 3)];
+
+            var b1 = ((a << 2) | (b >> 4)) & 0xff;
+            var b2 = ((b << 4) | (c >> 2)) & 0xff;
+            var b3 = ((c << 6) | (d)) & 0xff;
+
+            audioBuffer[k++] = b1;
+            audioBuffer[k++] = b2;
+            audioBuffer[k++] = b3;
+
+            i += 4;
+        }
+        streamOffset += blockLength + 8;
+
+        /*
+        var hex = [];
+        for (i = 0; i < k && i < 32; i++)
+		{
+            var ch = (audioBuffer[i] & 0xff).toString(16).toUpperCase();
             hex.push(ch.length == 1 ? '0' + ch : ch);
             hex.push(' ');
             if (i % 4 == 3) hex.push("   ");
             if (i % 16 == 15) hex.push("\n");
 		}
 		console.log(hex.join(''));
+        */
 
-		return arrayBuffer;
-	}
+        return audioBuffer.subarray(k);
+    }
 
 </script>

@@ -9,6 +9,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -73,7 +75,7 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
                     try
                     {
                         int len = -1;
-                        byte[] block = new byte[8192];
+                        byte[] block = new byte[640];
                         Packet p = Packet.create(10240);
 
                         fis = new FileInputStream("d:\\temp\\xxoo.pcm");
@@ -83,16 +85,17 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
                             p.addBytes(WAVUtils.createHeader(len, 1, 8000, 16));
                             p.addBytes(block, len);
 
-                            ByteUtils.dump(p.getBytes());
+                            // ByteUtils.dump(p.getBytes(), 32);
 
-                            ctx.writeAndFlush(String.format("%x\r\n", p.size()).getBytes()).await();
-                            ctx.writeAndFlush(p.getBytes()).await();
+                            String audioData = new BASE64Encoder().encode(p.getBytes()).replaceAll("[\r\n]+", "");
+
+                            ctx.writeAndFlush(String.format("%x\r\n", audioData.length() + 8).getBytes()).await();
+                            ctx.writeAndFlush(String.format("%08x", audioData.length()).getBytes()).await();
+                            ctx.writeAndFlush(audioData.getBytes()).await();
                             ctx.writeAndFlush("\r\n".getBytes()).await();
 
                             System.out.println("发了一块块 --> " + len);
-                            Thread.sleep(10);
-
-                            break;
+                            Thread.sleep(20);
                         }
 
                         ctx.writeAndFlush(String.format("%x\r\n", 0).getBytes());
