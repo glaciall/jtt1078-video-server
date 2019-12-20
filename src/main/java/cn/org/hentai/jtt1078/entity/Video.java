@@ -1,4 +1,4 @@
-package cn.org.hentai.jtt1078.publisher.entity;
+package cn.org.hentai.jtt1078.entity;
 
 /**
  * Created by houcheng on 2019-12-11.
@@ -11,7 +11,7 @@ public class Video extends Media
     public FlvType flvType;
     public Video(FlvType flvType, byte[] data)
     {
-        super(Media.Type.video, data);
+        super(Media.Type.video, 0, data);
         this.flvType = flvType;
         this.isKeyFrame = ((data[11] >> 4) & 0x0f) == 1;
     }

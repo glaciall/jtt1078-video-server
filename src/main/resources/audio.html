@@ -3,9 +3,10 @@
 		<title>Chunked Audio Test</title>
 	</head>
 	<body>
+		<button>Play</button>
 	</body>
 </html>
-<script src="//static.transnova.com.cn//assets/global/plugins/jquery.min.js" type="text/javascript"></script>
+<script src="//cdn.bootcss.com/jquery/3.4.1/jquery.min.js" type="text/javascript"></script>
 <script type="text/javascript">
 
 	var streamOffset = 0;
@@ -43,20 +44,24 @@
             segments.push(buffer);
         };
 
-	    var xhr = new XMLHttpRequest();
-	    xhr.open('GET', '/audio/1111111111111111', true);
-        xhr.onprogress = function()
-        {
-            var audioData = xhr.responseText;
-			while (true)
+	    $('button').click(function()
+		{
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/audio/' + location.hash.substring(1), true);
+            xhr.onprogress = function()
             {
-                var audio = base64Decode(audioData);
-                if (audio == null) break;
-                console.log('decoded: ' + audio.length);
-                audioContext.decodeAudioData(audio.buffer, decodeCallback);
+                var audioData = xhr.responseText;
+                while (true)
+                {
+                    var audio = base64Decode(audioData);
+                    if (audio == null) break;
+                    console.log('decoded: ' + audio.length);
+                    audioContext.decodeAudioData(audio.buffer, decodeCallback);
+                }
             }
-        }
-        xhr.send();
+            xhr.send();
+		});
+
         setInterval(playNextSegment, 50);
 	});
 

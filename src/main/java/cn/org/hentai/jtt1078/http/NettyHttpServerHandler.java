@@ -66,51 +66,21 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
             ctx.writeAndFlush(resp.getBytes());
 
             // 订阅音频数据
-            // PublishManager.getInstance().subscribe(tag, ctx);
-            new Thread()
-            {
-                public void run()
-                {
-                    FileInputStream fis = null;
-                    try
-                    {
-                        int len = -1;
-                        byte[] block = new byte[640];
-                        Packet p = Packet.create(10240);
-
-                        fis = new FileInputStream("d:\\temp\\xxoo.pcm");
-                        while ((len = fis.read(block)) > -1)
-                        {
-                            p.reset();
-                            p.addBytes(WAVUtils.createHeader(len, 1, 8000, 16));
-                            p.addBytes(block, len);
-
-                            // ByteUtils.dump(p.getBytes(), 32);
-
-                            String audioData = new BASE64Encoder().encode(p.getBytes()).replaceAll("[\r\n]+", "");
-
-                            ctx.writeAndFlush(String.format("%x\r\n", audioData.length() + 8).getBytes()).await();
-                            ctx.writeAndFlush(String.format("%08x", audioData.length()).getBytes()).await();
-                            ctx.writeAndFlush(audioData.getBytes()).await();
-                            ctx.writeAndFlush("\r\n".getBytes()).await();
-
-                            System.out.println("发了一块块 --> " + len);
-                            Thread.sleep(20);
-                        }
-
-                        ctx.writeAndFlush(String.format("%x\r\n", 0).getBytes());
-                        ctx.writeAndFlush("\r\n".getBytes());
-                    }
-                    catch(Exception ex)
-                    {
-                        ex.printStackTrace();
-                    }
-                }
-            }.start();
+            PublishManager.getInstance().subscribe("audio-" + tag, ctx);
         }
         else if (uri.equals("/test/audio"))
         {
             byte[] fileData = FileUtils.read(new File("C:\\Users\\matrixy\\IdeaProjects\\jtt1078-video-server\\src\\main\\resources\\audio.html"));
+            ByteBuf body = Unpooled.buffer(fileData.length);
+            body.writeBytes(fileData);
+            FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(200), body);
+            response.headers().add("Content-Length", fileData.length);
+            ctx.write(response);
+            ctx.flush();
+        }
+        else if (uri.equals("/test/video"))
+        {
+            byte[] fileData = FileUtils.read(new File("C:\\Users\\matrixy\\IdeaProjects\\jtt1078-video-server\\src\\main\\resources\\video.html"));
             ByteBuf body = Unpooled.buffer(fileData.length);
             body.writeBytes(fileData);
             FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(200), body);

@@ -1,7 +1,7 @@
 package cn.org.hentai.jtt1078.server;
 
 import cn.org.hentai.jtt1078.publisher.PublishManager;
-import cn.org.hentai.jtt1078.publisher.entity.Audio;
+import cn.org.hentai.jtt1078.entity.Audio;
 import cn.org.hentai.jtt1078.util.Configs;
 import cn.org.hentai.jtt1078.util.Packet;
 import cn.org.hentai.jtt1078.video.FFMpegManager;
@@ -63,14 +63,15 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         if (dataType == 0x04) lengthOffset = 28 - 8 - 2 - 2;
         else if (dataType == 0x03) lengthOffset = 28 - 4;
 
+        int pt = packet.seek(5).nextByte() & 0x7f;
+
         if (dataType == 0x00 || dataType == 0x01 || dataType == 0x02)
         {
             FFMpegManager.getInstance().feed(publisherId, packet.seek(lengthOffset + 2).nextBytes());
         }
         else if (dataType == 0x03)
         {
-            // TODO: 暂时屏蔽掉音频
-            PublishManager.getInstance().publish("audio-" + tag, new Audio(packet.seek(lengthOffset + 2).nextBytes()));
+            PublishManager.getInstance().publish("audio-" + tag, new Audio(pt, packet.seek(lengthOffset + 2).nextBytes()));
         }
     }
 

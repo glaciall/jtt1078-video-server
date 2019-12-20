@@ -1,4 +1,4 @@
-package cn.org.hentai.jtt1078.publisher.entity;
+package cn.org.hentai.jtt1078.entity;
 
 /**
  * Created by houcheng on 2019-12-11.
@@ -9,12 +9,14 @@ public class Media
     public enum Type { video, audio };
 
     public Type type;
+    public MediaEncoding.Encoding encoding;
     public long sequence;
     public byte[] data;
 
-    public Media(Type type, byte[] data)
+    public Media(Type type, int payloadType, byte[] data)
     {
         this.type = type;
         this.data = data;
+        this.encoding = MediaEncoding.getEncoding(type, payloadType);
     }
 }

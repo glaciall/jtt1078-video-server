@@ -1,9 +1,8 @@
 package cn.org.hentai.jtt1078.video;
 
 import cn.org.hentai.jtt1078.publisher.PublishManager;
-import cn.org.hentai.jtt1078.publisher.entity.Video;
+import cn.org.hentai.jtt1078.entity.Video;
 import cn.org.hentai.jtt1078.util.ByteHolder;
-import cn.org.hentai.jtt1078.util.ByteUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

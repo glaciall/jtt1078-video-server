@@ -1,0 +1,32 @@
+<html>
+<head>
+    <title>HTTP-Flv Test</title>
+</head>
+<scripts type="text/javascript" src="//cdn.bootcss.com/flv.js/1.5.0/flv.min.js"></scripts>
+<script type="text/javascript" src="//192.168.10.2/flv.min.js"></script>
+<body>
+<video id="xxoo" autoplay></video>
+<script type="text/javascript">
+
+    var el = document.getElementById('xxoo');
+
+    var player = flvjs.createPlayer({
+        type : 'flv',
+        url : '/video/' + location.hash.substring(1),
+        isLive : true,
+        enableStashBuffer : false,
+        enableWorker : true,
+        stashInitialSize : 128
+    });
+    player.on('media_info', function()
+    {
+        console.log('media_info');
+        console.log(player.mediaInfo);
+        player.play();
+    });
+    player.attachMediaElement(el);
+    player.load();
+</script>
+<button onclick="player.play()">Play</button>
+</body>
+</html>

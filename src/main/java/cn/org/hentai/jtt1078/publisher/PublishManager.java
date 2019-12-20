@@ -1,7 +1,9 @@
 package cn.org.hentai.jtt1078.publisher;
 
-import cn.org.hentai.jtt1078.publisher.entity.Media;
-import cn.org.hentai.jtt1078.publisher.entity.Video;
+import cn.org.hentai.jtt1078.entity.Media;
+import cn.org.hentai.jtt1078.subscriber.AudioSubscriber;
+import cn.org.hentai.jtt1078.subscriber.Subscriber;
+import cn.org.hentai.jtt1078.subscriber.VideoSubscriber;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,15 +28,6 @@ public final class PublishManager
         subscriberMap = new ConcurrentHashMap<String, ConcurrentLinkedQueue<Subscriber>>();
     }
 
-    // 1. 订阅是怎么订阅的？
-
-    // 2. 需要持续持有关键祯
-
-    // 3. 需要能够删除上一个系列
-
-    // 4. 需要记录每个订阅者的索引
-
-    // 5. 需要提供视频与音频
     public void subscribe(String tag, ChannelHandlerContext ctx)
     {
         ConcurrentLinkedQueue<Subscriber> listeners = subscriberMap.get(tag);
@@ -44,8 +37,10 @@ public final class PublishManager
             subscriberMap.put(tag, listeners);
         }
 
-        Subscriber subscriber = new Subscriber(tag, ctx);
-        subscriber.setName("subscriber-" + ctx.channel().remoteAddress().toString());
+        Subscriber subscriber = null;
+        if (tag.startsWith("video")) subscriber = new VideoSubscriber(tag, ctx);
+        else subscriber = new AudioSubscriber(tag, ctx);
+
         listeners.add(subscriber);
         subscriber.start();
 
