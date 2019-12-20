@@ -69,8 +69,8 @@ public final class ADPCMCodec extends AudioCodec
         for (int i = 0, k = 0; i < outdata.length; i++)
         {
             short s = outdata[i];
-            temp[k++] = (byte)((s >> 8) & 0xff);
             temp[k++] = (byte)(s & 0xff);
+            temp[k++] = (byte)((s >> 8) & 0xff);
         }
         return temp;
     }
