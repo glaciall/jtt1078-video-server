@@ -1,5 +1,8 @@
 package cn.org.hentai.jtt1078.media.publisher;
 
+import cn.org.hentai.jtt1078.audio.ADPCMCodec;
+import cn.org.hentai.jtt1078.audio.AudioCodec;
+import cn.org.hentai.jtt1078.audio.RawDataCopyCodec;
 import cn.org.hentai.jtt1078.media.Media;
 
 import java.io.FileOutputStream;
@@ -19,9 +22,8 @@ public class AudioPublisher extends MediaStreamPublisher
     @Override
     public void transcodeTo(Media.Encoding mediaEncoding, byte[] data, OutputStream output) throws Exception
     {
-        output.write(data);
+        AudioCodec codec = AudioCodec.getCodec(mediaEncoding);
+        output.write(codec.toPCM(data));
         output.flush();
-
-        System.out.println("audio published...");
     }
 }

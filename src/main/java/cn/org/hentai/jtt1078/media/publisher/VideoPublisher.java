@@ -20,7 +20,5 @@ public class VideoPublisher extends MediaStreamPublisher
     {
         output.write(data);
         output.flush();
-
-        System.out.println("video published...");
     }
 }
