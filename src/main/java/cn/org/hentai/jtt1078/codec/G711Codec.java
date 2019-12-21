@@ -90,45 +90,15 @@ public class G711Codec extends AudioCodec
         return (a_val & SIGN_BIT) != 0 ? t : (short) -t;
     }
 
-    /**
-     * pcm 转 G711 a率
-     *
-     * @param pcm
-     * @param code
-     * @param size
-     */
-    public static void fromPCM(short[] pcm, byte[] code, int size)
-    {
-        for (int i = 0; i < size; i++)
-        {
-            code[i] = linear2alaw(pcm[i]);
-        }
-    }
-
-    /**
-     * G.711 转 PCM
-     *
-     * @param pcm
-     * @param code
-     * @param size
-     */
-    public static void toPCM(short[] pcm, byte[] code, int size)
-    {
-        for (int i = 0; i < size; i++)
-        {
-            pcm[i] = alaw2linear(code[i]);
-        }
-    }
-
     // 由G.711转至PCM
     public static byte[] _toPCM(byte[] g711data)
     {
         byte[] pcmdata = new byte[g711data.length * 2];
-        for (int i = 0, k = 0; i < g711data.length; i++,k+=2)
+        for (int i = 0, k = 0; i < g711data.length; i++)
         {
             short v = alaw2linear(g711data[i]);
-            pcmdata[k] = (byte)((v >> 8) & 0xff);
-            pcmdata[k + 1] = (byte) (v & 0xff);
+            pcmdata[k++] = (byte)((v >> 8) & 0xff);
+            pcmdata[k++] = (byte) (v & 0xff);
         }
         return pcmdata;
     }

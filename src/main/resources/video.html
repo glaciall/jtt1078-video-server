@@ -7,26 +7,28 @@
 <body>
 <video id="xxoo" autoplay></video>
 <script type="text/javascript">
-
-    var el = document.getElementById('xxoo');
-
-    var player = flvjs.createPlayer({
-        type : 'flv',
-        url : '/video/' + location.hash.substring(1),
-        isLive : true,
-        enableStashBuffer : false,
-        enableWorker : true,
-        stashInitialSize : 128
-    });
-    player.on('media_info', function()
+    function play()
     {
-        console.log('media_info');
-        console.log(player.mediaInfo);
-        player.play();
-    });
-    player.attachMediaElement(el);
-    player.load();
+        var el = document.getElementById('xxoo');
+
+        var player = flvjs.createPlayer({
+            type : 'flv',
+            url : '/video/' + location.hash.substring(1),
+            isLive : true,
+            enableStashBuffer : false,
+            enableWorker : true,
+            stashInitialSize : 128
+        });
+        player.on('media_info', function()
+        {
+            console.log('media_info');
+            console.log(player.mediaInfo);
+            player.play();
+        });
+        player.attachMediaElement(el);
+        player.load();
+    }
 </script>
-<button onclick="player.play()">Play</button>
+<button onclick="play()">Play</button>
 </body>
 </html>

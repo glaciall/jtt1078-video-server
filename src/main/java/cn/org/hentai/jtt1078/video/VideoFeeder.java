@@ -37,7 +37,7 @@ public class VideoFeeder extends Thread
     public void open(String tag, String rtmpURL) throws Exception
     {
         process = Runtime.getRuntime().exec(
-                String.format("%s -probesize 1024 -loglevel debug -re -i - -c copy -f flv -", Configs.get("ffmpeg.path")));
+                String.format("%s -loglevel debug -re -r 15 -f h264 -i - -c copy -f flv -probesize 512 -", Configs.get("ffmpeg.path")));
         output = process.getOutputStream();
         new VideoPublisher(tag, process.getInputStream()).start();
         StdoutCleaner.getInstance().watch(channel, process);

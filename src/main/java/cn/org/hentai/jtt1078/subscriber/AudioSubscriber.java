@@ -13,6 +13,8 @@ import sun.misc.BASE64Encoder;
 public class AudioSubscriber extends Subscriber
 {
     private Packet packet = null;
+    AudioCodec codec = null;
+
     public AudioSubscriber(String tag, ChannelHandlerContext ctx)
     {
         super(tag, ctx);
@@ -23,7 +25,12 @@ public class AudioSubscriber extends Subscriber
     @Override
     public void onData(ChannelHandlerContext ctx, Media media) throws Exception
     {
-        byte[] pcmData = AudioCodec.getCodec(media.encoding).toPCM(media.data);
+        if (codec == null)
+        {
+            codec = AudioCodec.getCodec(media.encoding);
+            logger.debug("Audio Codec: {}", media.encoding);
+        }
+        byte[] pcmData = codec.toPCM(media.data);
         packet.reset();
         packet.addBytes(WAVUtils.createHeader(pcmData.length, 1, 8000, 16));
         packet.addBytes(pcmData);

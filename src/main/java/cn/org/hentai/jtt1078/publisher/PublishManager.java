@@ -38,23 +38,28 @@ public final class PublishManager
         }
 
         Subscriber subscriber = null;
-        if (tag.startsWith("video")) subscriber = new VideoSubscriber(tag, ctx);
-        else subscriber = new AudioSubscriber(tag, ctx);
+        if (tag.startsWith("video"))
+        {
+            subscriber = new VideoSubscriber(tag, ctx);
+            // 如果已经有视频流了，那就把前三个关键片断发过去
+            ConcurrentLinkedDeque<Media> segments = channelMap.get(tag);
+            if (segments != null)
+            {
+                int i = 0;
+                for (Media media : segments)
+                {
+                    if (i++ == 3) break;
+                    subscriber.aware(media);
+                }
+            }
+        }
+        else
+        {
+            subscriber = new AudioSubscriber(tag, ctx);
+        }
 
         listeners.add(subscriber);
         subscriber.start();
-
-        // 如果已经有视频流了，那就把前三个关键片断发过去
-        ConcurrentLinkedDeque<Media> segments = channelMap.get(tag);
-        if (segments != null)
-        {
-            int i = 0;
-            for (Media media : segments)
-            {
-                if (i++ == 3) break;
-                subscriber.aware(media);
-            }
-        }
     }
 
     public void publish(String tag, Media media)
@@ -67,15 +72,12 @@ public final class PublishManager
         }
 
         // 只用缓存前三个消息包就可以了
-        if (segments.size() < 3) segments.addLast(media);
+        if (tag.startsWith("video") && segments.size() < 3) segments.addLast(media);
 
         // 广播到所有的订阅者，直接发，先不等待关键祯
         ConcurrentLinkedQueue<Subscriber> listeners = subscriberMap.get(tag);
-        if (listeners == null)
-        {
-            listeners = new ConcurrentLinkedQueue<Subscriber>();
-            subscriberMap.put(tag, listeners);
-        }
+        if (listeners == null) return;
+
         for (Subscriber listener : listeners)
         {
             try
@@ -89,6 +91,10 @@ public final class PublishManager
             }
         }
     }
+
+    // 释放，chunked连接断开时，释放subscriberMap里的内容
+    // ffmpeg退出时，释放flv tag
+
 
     static final PublishManager instance = new PublishManager();
     public static void init() { }
