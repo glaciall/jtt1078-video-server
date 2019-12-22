@@ -33,6 +33,23 @@ public final class FileUtils
     public static byte[] read(File file)
     {
         FileInputStream fis = null;
+        try
+        {
+            fis = new FileInputStream(file);
+            return read(fis);
+        }
+        catch(Exception ex)
+        {
+            throw new RuntimeException(ex);
+        }
+        finally
+        {
+            try { fis.close(); } catch(Exception e) { }
+        }
+    }
+
+    public static byte[] read(InputStream fis)
+    {
         ByteArrayOutputStream baos = null;
         try
         {
@@ -40,7 +57,6 @@ public final class FileUtils
 
             int len = -1;
             byte[] block = new byte[1024];
-            fis = new FileInputStream(file);
             while ((len = fis.read(block)) > -1)
             {
                 baos.write(block, 0, len);
@@ -51,10 +67,6 @@ public final class FileUtils
         catch(Exception ex)
         {
             throw new RuntimeException(ex);
-        }
-        finally
-        {
-            try { fis.close(); } catch(Exception e) { }
         }
     }
 

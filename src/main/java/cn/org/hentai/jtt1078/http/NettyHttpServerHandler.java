@@ -70,7 +70,7 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
         }
         else if (uri.equals("/test/audio"))
         {
-            byte[] fileData = FileUtils.read(new File("C:\\Users\\matrixy\\IdeaProjects\\jtt1078-video-server\\src\\main\\resources\\audio.html"));
+            byte[] fileData = FileUtils.read(NettyHttpServerHandler.class.getResourceAsStream("/audio.html"));
             ByteBuf body = Unpooled.buffer(fileData.length);
             body.writeBytes(fileData);
             FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(200), body);
@@ -80,7 +80,7 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
         }
         else if (uri.equals("/test/video"))
         {
-            byte[] fileData = FileUtils.read(new File("C:\\Users\\matrixy\\IdeaProjects\\jtt1078-video-server\\src\\main\\resources\\video.html"));
+            byte[] fileData = FileUtils.read(NettyHttpServerHandler.class.getResourceAsStream("/video.html"));
             ByteBuf body = Unpooled.buffer(fileData.length);
             body.writeBytes(fileData);
             FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(200), body);
