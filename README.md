@@ -65,8 +65,8 @@ ffmpeg的输入端，可以是stdin、网络流、文件（图片或视频）等
 2. 确保nginx服务器已经启动，同时配置文件里的`rtmp.format`已经设置为正确的RTMP地址格式。
 3. 直接在IDE里运行`cn.org.hentai.jtt1078.app.VideoServerApp`，或对项目进行打包，执行`mvn package`，执行`java -jar jtt1078-video-server-1.0-SNAPSHOT.jar`来启动服务器端。
 4. 运行`VideoPushTest.java`，开始模拟车载终端的视频推送。
-5. 服务器端的日志里将会输出`start streaming to rtmp://....`的字样，后面即为实际推送的RTMP地址。
-6. 打开`PotPlayer`，按下`Ctrl+U`，输入上面输出的RTMP地址，稍等片刻就能看到转播出来的视频了。
+5. 在运行的输出日志里，确定终端的SIM卡号和通道号。
+6. 在浏览器里输入`http://serverip:3333/test/multimedia#SIM-CHANNEL，点击页面上的**play**按钮开始观看视频。
 
 ### 常见问题
 1. HLS、HTTP-FLV、RTMP等实时视频都可以通过ffmpeg推流，在RTMP服务器端配置来实现。

@@ -1,0 +1,227 @@
+<html>
+<head>
+    <title>HTTP-Flv Test</title>
+</head>
+<script type="text/javascript" src="//cdn.bootcss.com/flv.js/1.5.0/flv.min.js"></script>
+<body>
+<video id="xxoo" autoplay></video>
+<script type="text/javascript">
+/**
+ * 创建一个FLV播放器，参数如下：
+ * {
+ *      container : 视频容器元素
+ *      muted     : 是否静音
+ *      url       : HTTP-FLV地址
+ * }
+ */
+function FLVPlayer(opts)
+{
+    var videoElement = document.createElement('VIDEO');
+    videoElement.autoplay = true;
+    videoElement.controls = false;
+    videoElement.muted = false;
+    videoElement.style.width = '100%';
+    videoElement.style.height = '100%';
+    opts.container.append(videoElement);
+
+    this.container = opts.container;
+    this.videoElement = videoElement;
+    this.httpFlvURL = opts.url;
+
+    this.mediaInfo = null;
+    this.play = null;
+    this.onPlayEvtListener = null;
+    this.onPauseEvtListener = null;
+    this.onStopEvtListener = null;
+
+    var self = this;
+    (function()
+    {
+        self.player = new flvjs.createPlayer({
+            type                            : 'flv',
+            url                             : self.httpFlvURL,
+            isLive                          : true,
+            enableStashBuffer               : true,
+            autoCleanupSourceBuffer         : true,
+            autoCleanupMaxBackwardDuration  : 5,
+            autoCleanupMinBackwardDuration  : 5,
+            stashInitialSize                : 128
+        });
+
+        self.player.on('media_info', function()
+        {
+            self.mediaInfo = self.player.mediaInfo;
+        });
+
+        var autoPlayTimer = null;
+        self.videoElement.addEventListener('player', function(e)
+        {
+            if (autoPlayTimer) clearInterval(autoPlayTimer);
+            if (self.onPlayEvtListener) self.onPlayEvtListener(self, e);
+        });
+        self.videoElement.addEventListener('dblclick', function()
+        {
+            if (self.videoElement.requestFullscreen) self.videoElement.requestFullscreen();
+        });
+        autoPlayTimer = setInterval(function()
+        {
+            try { self.player.play(); } catch(e) { clearInterval(autoPlayTimer); };
+        });
+
+        self.player.attachMediaElement(self.videoElement);
+        self.player.load();
+        self.player.play();
+    })();
+
+    this.fullscreen = function()
+    {
+        if (this.videoElement && this.videoElement.requestFullscreen)
+            this.videoElement.requestFullscreen();
+    };
+
+    this.onPlay = function(fn)
+    {
+        this.onPlayEvtListener = fn;
+    };
+
+    this.destroy = function()
+    {
+        this.player.destroy();
+    }
+}
+
+/**
+ * 流式音频
+ * {
+ *      url
+ * }
+ */
+window.AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext || window.msAudioContext;
+var Base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.split('');
+var CharIdxArray = { };
+for (var i = 0; i < Base64Chars.length; i++) CharIdxArray[Base64Chars[i]] = i;
+
+function StreamAudio(opts)
+{
+    var streamOffset = 0;
+    var audioContext = new AudioContext();
+    var segments = [];
+    var ended = true;
+
+    var xhr = null;
+    var loaded = false;
+
+    function playNextSegment()
+    {
+        if (segments.length > 0 && ended)
+        {
+            ended = false;
+            var audioBufferSouceNode = audioContext.createBufferSource();
+            audioBufferSouceNode.onended = function()
+            {
+                ended = true;
+            }
+            audioBufferSouceNode.buffer = segments.shift();
+            audioBufferSouceNode.connect(audioContext.destination);
+            audioBufferSouceNode.start(0);
+        }
+    }
+
+    var decodeCallback = function(buffer)
+    {
+        segments.push(buffer);
+    };
+
+    function base64Decode(text)
+    {
+        var i, k = 0, l;
+        if (text.length < streamOffset + 8) return null;
+        var blockLength = parseInt(text.substring(streamOffset, streamOffset + 8), 16);
+        if (text.length < streamOffset + 8 + blockLength) return null;
+
+        var audioBuffer = new Uint8Array(new ArrayBuffer(2048), 0);
+        for (i = streamOffset + 8, l = text.length; i < l && k < blockLength; )
+        {
+            var a = CharIdxArray[text.charAt(i + 0)];
+            var b = CharIdxArray[text.charAt(i + 1)];
+            var c = CharIdxArray[text.charAt(i + 2)];
+            var d = CharIdxArray[text.charAt(i + 3)];
+
+            var b1 = ((a << 2) | (b >> 4)) & 0xff;
+            var b2 = ((b << 4) | (c >> 2)) & 0xff;
+            var b3 = ((c << 6) | (d)) & 0xff;
+
+            audioBuffer[k++] = b1;
+            audioBuffer[k++] = b2;
+            audioBuffer[k++] = b3;
+
+            i += 4;
+        }
+        streamOffset += blockLength + 8;
+        return audioBuffer.subarray(k);
+    }
+
+    this.play = function()
+    {
+        if (loaded) return;
+        xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.onprogress = function()
+        {
+            var audioData = xhr.responseText;
+            while (true)
+            {
+                var audio = base64Decode(audioData);
+                if (audio == null) break;
+                console.log('decoded: ' + audio.length);
+                audioContext.decodeAudioData(audio.buffer, decodeCallback);
+            }
+        }
+        xhr.send();
+        loaded = true;
+    };
+
+    this.mute = function()
+    {
+
+    };
+
+    this.unmute = function()
+    {
+
+    };
+
+    this.destroy = function()
+    {
+        if (xhr) xhr.abort();
+        xhr = null;
+    };
+}
+
+</script>
+<script type="text/javascript">
+    function play()
+    {
+        var el = document.getElementById('xxoo');
+
+        var player = flvjs.createPlayer({
+            type : 'flv',
+            url : '/video/' + location.hash.substring(1),
+            isLive : true,
+            enableStashBuffer : false,
+            enableWorker : true,
+            stashInitialSize : 128
+        });
+        player.on('media_info', function()
+        {
+            console.log('media_info');
+            console.log(player.mediaInfo);
+            player.play();
+        });
+        player.attachMediaElement(el);
+        player.load();
+    }
+</script>
+<button onclick="play()">Play</button>
+</body>
+</html>

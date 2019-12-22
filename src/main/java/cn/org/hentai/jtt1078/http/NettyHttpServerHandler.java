@@ -70,23 +70,15 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
         }
         else if (uri.equals("/test/audio"))
         {
-            byte[] fileData = FileUtils.read(NettyHttpServerHandler.class.getResourceAsStream("/audio.html"));
-            ByteBuf body = Unpooled.buffer(fileData.length);
-            body.writeBytes(fileData);
-            FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(200), body);
-            response.headers().add("Content-Length", fileData.length);
-            ctx.write(response);
-            ctx.flush();
+            responseHTMLFile("/audio.html", ctx);
         }
         else if (uri.equals("/test/video"))
         {
-            byte[] fileData = FileUtils.read(NettyHttpServerHandler.class.getResourceAsStream("/video.html"));
-            ByteBuf body = Unpooled.buffer(fileData.length);
-            body.writeBytes(fileData);
-            FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(200), body);
-            response.headers().add("Content-Length", fileData.length);
-            ctx.write(response);
-            ctx.flush();
+            responseHTMLFile("/video.html", ctx);
+        }
+        else if (uri.equals("/test/multimedia"))
+        {
+            responseHTMLFile("/multimedia.html", ctx);
         }
         else
         {
@@ -98,6 +90,18 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
             ctx.write(response);
             ctx.flush();
         }
+    }
+
+    // 响应静态文件内容
+    private void responseHTMLFile(String htmlFilePath, ChannelHandlerContext ctx)
+    {
+        byte[] fileData = FileUtils.read(NettyHttpServerHandler.class.getResourceAsStream(htmlFilePath));
+        ByteBuf body = Unpooled.buffer(fileData.length);
+        body.writeBytes(fileData);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(200), body);
+        response.headers().add("Content-Length", fileData.length);
+        ctx.write(response);
+        ctx.flush();
     }
 
     @Override
