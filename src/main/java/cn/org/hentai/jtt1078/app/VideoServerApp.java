@@ -130,7 +130,7 @@ public class VideoServerApp
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
             try
             {
-                int port = 3333;
+                int port = Configs.getInt("server.http.port", 3333);
                 ChannelFuture f = bootstrap.bind(port).sync();
                 logger.info("HTTP Proxy Server started at: {}", port);
                 f.channel().closeFuture().sync();
