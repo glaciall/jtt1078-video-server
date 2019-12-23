@@ -2,9 +2,10 @@
 <head>
     <title>HTTP-Flv Test</title>
 </head>
-<script type="text/javascript" src="//cdn.bootcss.com/flv.js/1.5.0/flv.min.js"></script>
-<body>
-<video id="xxoo" autoplay></video>
+<script src="//cdn.bootcss.com/jquery/3.4.1/jquery.min.js" type="text/javascript"></script>
+<script src="//cdn.bootcss.com/flv.js/1.5.0/flv.min.js" type="text/javascript"></script>
+<body style="background-color: #666666">
+<div id="xxoo" style="background-color: #333333;border-radius: 10px; overflow: hidden; width: 400px; height: 300px;"></div>
 <script type="text/javascript">
 /**
  * 创建一个FLV播放器，参数如下：
@@ -34,9 +35,11 @@ function FLVPlayer(opts)
     this.onPauseEvtListener = null;
     this.onStopEvtListener = null;
 
-    var self = this;
-    (function()
+    this.play = function()
     {
+        if (this.player) return;
+
+        var self = this;
         self.player = new flvjs.createPlayer({
             type                            : 'flv',
             url                             : self.httpFlvURL,
@@ -71,7 +74,7 @@ function FLVPlayer(opts)
         self.player.attachMediaElement(self.videoElement);
         self.player.load();
         self.player.play();
-    })();
+    };
 
     this.fullscreen = function()
     {
@@ -101,7 +104,7 @@ var Base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345678
 var CharIdxArray = { };
 for (var i = 0; i < Base64Chars.length; i++) CharIdxArray[Base64Chars[i]] = i;
 
-function StreamAudio(opts)
+function StreamAudio(url)
 {
     var streamOffset = 0;
     var audioContext = new AudioContext();
@@ -110,6 +113,8 @@ function StreamAudio(opts)
 
     var xhr = null;
     var loaded = false;
+    var timeout = null;
+    this.url = url;
 
     function playNextSegment()
     {
@@ -125,7 +130,10 @@ function StreamAudio(opts)
             audioBufferSouceNode.connect(audioContext.destination);
             audioBufferSouceNode.start(0);
         }
+        timeout = setTimeout(playNextSegment, 0);
     }
+
+    timeout = setTimeout(playNextSegment, 0);
 
     var decodeCallback = function(buffer)
     {
@@ -165,7 +173,7 @@ function StreamAudio(opts)
     {
         if (loaded) return;
         xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
+        xhr.open('GET', this.url, true);
         xhr.onprogress = function()
         {
             var audioData = xhr.responseText;
@@ -195,6 +203,7 @@ function StreamAudio(opts)
     {
         if (xhr) xhr.abort();
         xhr = null;
+        clearTimeout(timeout);
     };
 }
 
@@ -202,24 +211,14 @@ function StreamAudio(opts)
 <script type="text/javascript">
     function play()
     {
-        var el = document.getElementById('xxoo');
+        var videoPlayer = new FLVPlayer({
+            container : $('#xxoo'),
+            url : '/video/013800138999-2',
+        });
+        var audioPlayer = new StreamAudio('/audio/013800138999-2');
 
-        var player = flvjs.createPlayer({
-            type : 'flv',
-            url : '/video/' + location.hash.substring(1),
-            isLive : true,
-            enableStashBuffer : false,
-            enableWorker : true,
-            stashInitialSize : 128
-        });
-        player.on('media_info', function()
-        {
-            console.log('media_info');
-            console.log(player.mediaInfo);
-            player.play();
-        });
-        player.attachMediaElement(el);
-        player.load();
+        videoPlayer.play();
+        audioPlayer.play();
     }
 </script>
 <button onclick="play()">Play</button>
