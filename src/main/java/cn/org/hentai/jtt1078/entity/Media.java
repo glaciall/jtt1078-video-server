@@ -13,10 +13,11 @@ public class Media
     public long sequence;
     public byte[] data;
 
-    public Media(Type type, int payloadType, byte[] data)
+    public Media(long seq, Type type, int payloadType, byte[] data)
     {
         this.type = type;
         this.data = data;
         this.encoding = MediaEncoding.getEncoding(type, payloadType);
+        this.sequence = seq;
     }
 }

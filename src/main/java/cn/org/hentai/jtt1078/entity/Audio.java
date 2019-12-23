@@ -5,8 +5,8 @@ package cn.org.hentai.jtt1078.entity;
  */
 public class Audio extends Media
 {
-    public Audio(int encoding, byte[] data)
+    public Audio(long sequence, int encoding, byte[] data)
     {
-        super(Type.audio, encoding, data);
+        super(sequence, Type.audio, encoding, data);
     }
 }

@@ -44,11 +44,11 @@ function FLVPlayer(opts)
             type                            : 'flv',
             url                             : self.httpFlvURL,
             isLive                          : true,
-            enableStashBuffer               : true,
+            enableStashBuffer               : false,
             autoCleanupSourceBuffer         : true,
             autoCleanupMaxBackwardDuration  : 5,
             autoCleanupMinBackwardDuration  : 5,
-            stashInitialSize                : 128
+            stashInitialSize                : 32
         });
 
         self.player.on('media_info', function()

@@ -64,12 +64,19 @@ public final class PublishManager
 
     public void publish(String tag, Media media)
     {
+        if (tag.startsWith("video")) logger.info("published: {}", media.sequence);
         ConcurrentLinkedDeque<Media> segments = channelMap.get(tag);
         if (segments == null)
         {
             segments = new ConcurrentLinkedDeque<Media>();
             channelMap.put(tag, segments);
         }
+
+        // 如果是音频，就先缓存起来
+        // 如果是视频，那就看看最近的视频是不是有合适的？
+        // 怎么样算合适呢？
+        //      每一个音频片段都记录下它前一个视频片段序号
+        //      每次收到视频片段时，都想办法去取到所有小于此序号的音频片段进行广播
 
         // 只用缓存前三个消息包就可以了
         if (tag.startsWith("video") && segments.size() < 3) segments.addLast(media);

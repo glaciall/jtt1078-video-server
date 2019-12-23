@@ -18,12 +18,14 @@ public class VideoPublisher extends Thread
     static final AtomicLong sequence = new AtomicLong(0L);
 
     private String tag;
+    private long index;
     private InputStream input;
 
     public VideoPublisher(String tag, InputStream input)
     {
         this.tag = tag;
         this.input = input;
+        this.index = 0;
 
         this.setName("video-publisher-" + sequence.addAndGet(1));
     }
@@ -73,10 +75,10 @@ public class VideoPublisher extends Thread
         int headerSize = buffer.getInt(5);
         boolean hasAudio = (flag & (1 << 2)) > 0;
         boolean hasVideo = (flag & (1 << 0)) > 0;
-        System.out.println(String.format("FLV [ version: %d, audio: %s, video: %s, header: %d ]", version, hasAudio, hasVideo, headerSize));
+        // System.out.println(String.format("FLV [ version: %d, audio: %s, video: %s, header: %d ]", version, hasAudio, hasVideo, headerSize));
         byte[] header = new byte[13];
         buffer.sliceInto(header, 13);
-        PublishManager.getInstance().publish(tag, new Video(Video.FlvType.Header, header));
+        PublishManager.getInstance().publish(tag, new Video(0, Video.FlvType.Header, header));
         return false;
     }
 
@@ -92,10 +94,11 @@ public class VideoPublisher extends Thread
         if (buffer.size() < size + 15) return true;
         int timestamp = timeLow | (timeHigh << 24);
 
-        System.out.println(String.format("Tag [ type: %2d, size: %8d, timestamp: %10d, stream: %2d ]", type, size, timestamp, streamId));
+        // System.out.println(String.format("Tag [ type: %2d, size: %8d, timestamp: %10d, stream: %2d ]", type, size, timestamp, streamId));
         byte[] data = new byte[size + 15];
         buffer.sliceInto(data, size + 15);
-        PublishManager.getInstance().publish(tag, new Video(type == 18 ? Video.FlvType.Description : Video.FlvType.Tag, data));
+        PublishManager.getInstance().publish(tag, new Video(this.index, type == 18 ? Video.FlvType.Description : Video.FlvType.Tag, data));
+        this.index += 1;
         return false;
     }
 }

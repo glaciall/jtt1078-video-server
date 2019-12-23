@@ -9,9 +9,9 @@ public class Video extends Media
 
     public boolean isKeyFrame;
     public FlvType flvType;
-    public Video(FlvType flvType, byte[] data)
+    public Video(long sequence, FlvType flvType, byte[] data)
     {
-        super(Media.Type.video, 0, data);
+        super(sequence, Media.Type.video, 0, data);
         this.flvType = flvType;
         this.isKeyFrame = ((data[11] >> 4) & 0x0f) == 1;
     }

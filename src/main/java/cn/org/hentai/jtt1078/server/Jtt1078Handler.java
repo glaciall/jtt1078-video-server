@@ -54,11 +54,13 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
             logger.info("start streaming to {}", rtmpURL);
         }
 
-        int sequence = 0;
+        Integer sequence = session.get("video-sequence");
+        if (sequence == null) sequence = 0;
         // 1. 做好序号
         // 2. 音频需要转码后提供订阅
         int lengthOffset = 28;
         int dataType = (packet.seek(15).nextByte() >> 4) & 0x0f;
+        int pkType = packet.seek(15).nextByte() & 0x0f;
         // 透传数据类型：0100，没有后面的时间以及Last I Frame Interval和Last Frame Interval字段
         if (dataType == 0x04) lengthOffset = 28 - 8 - 2 - 2;
         else if (dataType == 0x03) lengthOffset = 28 - 4;
@@ -67,11 +69,18 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
 
         if (dataType == 0x00 || dataType == 0x01 || dataType == 0x02)
         {
+            // 碰到结束标记时，序号+1
+            if (pkType == 0 || pkType == 2)
+            {
+                sequence += 1;
+                session.set("video-sequence", sequence);
+                logger.info("read: {}", sequence);
+            }
             FFMpegManager.getInstance().feed(publisherId, packet.seek(lengthOffset + 2).nextBytes());
         }
         else if (dataType == 0x03)
         {
-            PublishManager.getInstance().publish("audio-" + tag, new Audio(pt, packet.seek(lengthOffset + 2).nextBytes()));
+            PublishManager.getInstance().publish("audio-" + tag, new Audio(sequence, pt, packet.seek(lengthOffset + 2).nextBytes()));
         }
     }
 
