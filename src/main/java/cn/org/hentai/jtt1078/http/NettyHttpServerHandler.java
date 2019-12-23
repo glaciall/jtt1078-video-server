@@ -45,7 +45,7 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
             resp.addBytes("Access-Control-Allow-Credentials: true\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("\r\n".getBytes(HEADER_ENCODING));
 
-            ctx.writeAndFlush(resp.getBytes());
+            ctx.writeAndFlush(resp.getBytes()).await();
 
             // 订阅视频数据
             PublishManager.getInstance().subscribe("video-" + tag, ctx);
@@ -63,7 +63,7 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
             resp.addBytes("Access-Control-Allow-Method: *\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("\r\n".getBytes(HEADER_ENCODING));
 
-            ctx.writeAndFlush(resp.getBytes());
+            ctx.writeAndFlush(resp.getBytes()).await();
 
             // 订阅音频数据
             PublishManager.getInstance().subscribe("audio-" + tag, ctx);
@@ -87,7 +87,7 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
             body.writeBytes(HTTP_403_DATA);
             FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(403), body);
             response.headers().add("Content-Length", HTTP_403_DATA.length);
-            ctx.write(response);
+            ctx.writeAndFlush(response).await();
             ctx.flush();
         }
     }

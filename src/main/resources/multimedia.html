@@ -47,7 +47,7 @@ function FLVPlayer(opts)
             enableStashBuffer               : false,
             autoCleanupSourceBuffer         : true,
             autoCleanupMaxBackwardDuration  : 5,
-            autoCleanupMinBackwardDuration  : 5,
+            autoCleanupMinBackwardDuration  : 1,
             stashInitialSize                : 32
         });
 
@@ -181,7 +181,6 @@ function StreamAudio(url)
             {
                 var audio = base64Decode(audioData);
                 if (audio == null) break;
-                console.log('decoded: ' + audio.length);
                 audioContext.decodeAudioData(audio.buffer, decodeCallback);
             }
         }

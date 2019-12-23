@@ -64,7 +64,7 @@ public final class PublishManager
 
     public void publish(String tag, Media media)
     {
-        if (tag.startsWith("video")) logger.info("published: {}", media.sequence);
+        // if (tag.startsWith("video")) logger.info("published: {}", media.sequence);
         ConcurrentLinkedDeque<Media> segments = channelMap.get(tag);
         if (segments == null)
         {
@@ -73,13 +73,49 @@ public final class PublishManager
         }
 
         // 如果是音频，就先缓存起来
-        // 如果是视频，那就看看最近的视频是不是有合适的？
-        // 怎么样算合适呢？
-        //      每一个音频片段都记录下它前一个视频片段序号
-        //      每次收到视频片段时，都想办法去取到所有小于此序号的音频片段进行广播
+        // 如果是视频，就把这个时间点以前的音频全部广播出去
 
         // 只用缓存前三个消息包就可以了
-        if (tag.startsWith("video") && segments.size() < 3) segments.addLast(media);
+        if (tag.startsWith("video"))
+        {
+            if (segments.size() < 3) segments.addLast(media);
+
+            long currentVideoIndex = media.sequence;
+
+            // 广播这个序号之前的所有音频片段
+            String audioTag = tag.replace("video", "audio");
+            ConcurrentLinkedDeque<Media> audioSegments = channelMap.get(audioTag);
+            if (audioSegments != null && audioSegments.size() > 0)
+            {
+                ConcurrentLinkedQueue<Subscriber> listeners = subscriberMap.get(audioTag);
+                while (listeners != null && audioSegments.size() > 0)
+                {
+                    Media audio = audioSegments.removeFirst();
+                    if (audio.sequence >= currentVideoIndex)
+                    {
+                        audioSegments.addFirst(audio);
+                        break;
+                    }
+                    for (Subscriber listener : listeners)
+                    {
+                        try
+                        {
+                            listener.aware(audio);
+                        }
+                        catch(Exception ex)
+                        {
+                            logger.error("aware failed", ex);
+                            listeners.remove(listener);
+                        }
+                    }
+                }
+            }
+        }
+        if (tag.startsWith("audio"))
+        {
+            segments.addLast(media);
+            return;
+        }
 
         // 广播到所有的订阅者，直接发，先不等待关键祯
         ConcurrentLinkedQueue<Subscriber> listeners = subscriberMap.get(tag);
@@ -93,7 +129,7 @@ public final class PublishManager
             }
             catch(Exception ex)
             {
-                logger.error("send error", ex);
+                logger.error("aware error", ex);
                 listeners.remove(listener);
             }
         }

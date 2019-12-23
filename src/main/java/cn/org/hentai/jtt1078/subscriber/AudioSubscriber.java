@@ -37,9 +37,9 @@ public class AudioSubscriber extends Subscriber
 
         String audioData = new BASE64Encoder().encode(packet.getBytes()).replaceAll("[\r\n]+", "");
 
-        ctx.writeAndFlush(String.format("%x\r\n", audioData.length() + 8).getBytes()).await();
-        ctx.writeAndFlush(String.format("%08x", audioData.length()).getBytes()).await();
-        ctx.writeAndFlush(audioData.getBytes()).await();
+        ctx.writeAndFlush(String.format("%x\r\n", audioData.length() + 8).getBytes());
+        ctx.writeAndFlush(String.format("%08x", audioData.length()).getBytes());
+        ctx.writeAndFlush(audioData.getBytes());
         ctx.writeAndFlush("\r\n".getBytes()).await();
     }
 }

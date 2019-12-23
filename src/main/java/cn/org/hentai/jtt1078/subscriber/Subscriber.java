@@ -1,6 +1,7 @@
 package cn.org.hentai.jtt1078.subscriber;
 
 import cn.org.hentai.jtt1078.entity.Media;
+import cn.org.hentai.jtt1078.server.SessionManager;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ public abstract class Subscriber extends Thread
     private Object lock;
     private String tag;
 
+    private long sessionId;
     private long lastDataSendTime;
 
     private ChannelHandlerContext ctx;
@@ -49,7 +51,9 @@ public abstract class Subscriber extends Thread
 
     public void run()
     {
-        while (!this.isInterrupted())
+        String sessionTag = tag.substring(6);
+        SessionManager sessionManager = SessionManager.getInstance();
+        loop : while (!this.isInterrupted())
         {
             try
             {
@@ -60,11 +64,13 @@ public abstract class Subscriber extends Thread
                     {
                         lock.wait(1000);
                         // TODO: 需要检查一下终端连接的状态，是否依然在推流中
+                        if (sessionManager.isAlive(sessionTag) == false) break loop;
                     }
                     media = messages.removeFirst();
                     if (lastDataSendTime == 0L) lastDataSendTime = System.currentTimeMillis();
                 }
 
+                // System.out.println(String.format("send %s: %6d", media.type, media.sequence));
                 onData(ctx, media);
                 lastDataSendTime = System.currentTimeMillis();
             }
@@ -74,6 +80,8 @@ public abstract class Subscriber extends Thread
                 break;
             }
         }
+
+        logger.info("subscriber: {} finished...", tag);
     }
 
     protected long getLastDataSendTime()

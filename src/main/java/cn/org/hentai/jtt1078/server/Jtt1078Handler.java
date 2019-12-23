@@ -51,7 +51,9 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
             if (publisherId == -1) throw new RuntimeException("exceed max concurrent stream pushing limitation");
             session.set(channelKey, publisherId);
 
-            logger.info("start streaming to {}", rtmpURL);
+            long sessionId = SessionManager.getInstance().register(tag);
+            session.set("sessionId", sessionId);
+            session.set("tag", tag);
         }
 
         Integer sequence = session.get("video-sequence");
@@ -74,7 +76,6 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
             {
                 sequence += 1;
                 session.set("video-sequence", sequence);
-                logger.info("read: {}", sequence);
             }
             FFMpegManager.getInstance().feed(publisherId, packet.seek(lengthOffset + 2).nextBytes());
         }
@@ -95,6 +96,7 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
     public void channelInactive(ChannelHandlerContext ctx) throws Exception
     {
         super.channelInactive(ctx);
+        release();
     }
 
     public final void setSession(Session session)
@@ -107,30 +109,31 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
     {
         // super.exceptionCaught(ctx, cause);
         cause.printStackTrace();
+        release();
+        ctx.close();
+    }
 
-        if (ctx != null)
+    private void release()
+    {
+        String tag = getSession().get("tag");
+        if (tag != null) SessionManager.getInstance().unregister(tag);
+
+        Session session = getSession();
+        if (session != null)
         {
-            Session session = getSession();
-            if (session != null)
+            Iterator itr = session.attributes.keySet().iterator();
+            while (itr.hasNext())
             {
-                Iterator itr = session.attributes.keySet().iterator();
-                while (itr.hasNext())
+                Object key = itr.next();
+                Object val = session.attributes.get(key);
+
+                if (val instanceof java.lang.Long && key.toString().startsWith("publisher"))
                 {
-                    Object key = itr.next();
-                    Object val = session.attributes.get(key);
-
-                    System.err.println(key + " ==> " + val);
-                    if (val instanceof java.lang.Long && key.toString().startsWith("publisher"))
-                    {
-                        long channel = Long.parseLong(val.toString());
-
-                        FFMpegManager.getInstance().close(channel);
-                        StdoutCleaner.getInstance().unwatch(channel);
-                    }
+                    long channel = Long.parseLong(val.toString());
+                    FFMpegManager.getInstance().close(channel);
+                    StdoutCleaner.getInstance().unwatch(channel);
                 }
             }
         }
-
-        ctx.close();
     }
 }
