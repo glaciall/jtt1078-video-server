@@ -51,6 +51,8 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
             if (publisherId == -1) throw new RuntimeException("exceed max concurrent stream pushing limitation");
             session.set(channelKey, publisherId);
 
+            logger.info("start publishing: {}", tag);
+
             long sessionId = SessionManager.getInstance().register(tag);
             session.set("sessionId", sessionId);
             session.set("tag", tag);
