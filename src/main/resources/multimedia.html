@@ -208,18 +208,23 @@ function StreamAudio(url)
 
 </script>
 <script type="text/javascript">
-    function play()
+    var TAG = '013800138999-2';
+    function playVideo()
     {
         var videoPlayer = new FLVPlayer({
             container : $('#xxoo'),
-            url : '/video/013800138999-2',
+            url : '/video/' + TAG,
         });
-        var audioPlayer = new StreamAudio('/audio/013800138999-2');
-
         videoPlayer.play();
+    }
+
+    function playAudio()
+    {
+        var audioPlayer = new StreamAudio('/audio/' + TAG);
         audioPlayer.play();
     }
 </script>
-<button onclick="play()">Play</button>
+<button onclick="playVideo()">Play Video</button>
+<button onclick="playAudio()">Play Audio</button>
 </body>
 </html>
