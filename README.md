@@ -116,6 +116,7 @@ public abstract class AudioCodec
 │   │       ├── app.properties（配置文件）
 │   │       ├── audio.html（音频播放测试页面）
 │   │       ├── log4j.properties（log4j配置）
+│   │       ├── tcpdump.bin（锐明终端模拟数据：视频H264、音频含海思头的ADPCMA）
 │   │       └── multimedia.html（音视频测试页面）
 └─────────────────────────────────────────────────────────────────────────────────────────────────
 ```
