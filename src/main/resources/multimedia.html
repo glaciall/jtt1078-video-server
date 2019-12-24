@@ -56,6 +56,11 @@ function FLVPlayer(opts)
             self.mediaInfo = self.player.mediaInfo;
         });
 
+        self.player.on('statistics_info', function()
+        {
+            console.log(arguments);
+        });
+
         var autoPlayTimer = null;
         self.videoElement.addEventListener('player', function(e)
         {

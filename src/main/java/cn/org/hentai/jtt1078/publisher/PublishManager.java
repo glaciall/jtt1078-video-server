@@ -88,7 +88,7 @@ public final class PublishManager
             if (audioSegments != null && audioSegments.size() > 0)
             {
                 ConcurrentLinkedQueue<Subscriber> listeners = subscriberMap.get(audioTag);
-                while (listeners != null && audioSegments.size() > 0)
+                while (audioSegments.size() > 0)
                 {
                     Media audio = audioSegments.removeFirst();
                     if (audio.sequence >= currentVideoIndex)
@@ -96,6 +96,7 @@ public final class PublishManager
                         audioSegments.addFirst(audio);
                         break;
                     }
+                    if (listeners == null) continue;
                     for (Subscriber listener : listeners)
                     {
                         try
@@ -133,6 +134,13 @@ public final class PublishManager
                 listeners.remove(listener);
             }
         }
+    }
+
+    public void free(String tag, Subscriber subscriber)
+    {
+        ConcurrentLinkedQueue<Subscriber> listeners = subscriberMap.get(tag);
+        if (listeners == null) return;
+        listeners.remove(subscriber);
     }
 
     // 释放，chunked连接断开时，释放subscriberMap里的内容

@@ -1,6 +1,7 @@
 package cn.org.hentai.jtt1078.subscriber;
 
 import cn.org.hentai.jtt1078.entity.Media;
+import cn.org.hentai.jtt1078.publisher.PublishManager;
 import cn.org.hentai.jtt1078.server.SessionManager;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -81,6 +82,7 @@ public abstract class Subscriber extends Thread
             }
         }
 
+        PublishManager.getInstance().free(tag, this);
         logger.info("subscriber: {} finished...", tag);
     }
 
