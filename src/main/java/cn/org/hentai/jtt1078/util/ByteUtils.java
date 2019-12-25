@@ -20,11 +20,11 @@ public final class ByteUtils
 
     public static synchronized void dump(byte[] data, int len)
     {
-        for (int i = 0, l = len; i < l; )
+        for (int i = 0, l = len; i < l && i < data.length; )
         {
             String ascii = "";
             int k = 0, f = 0;
-            for (; k < 16; k++)
+            for (; k < 16 && k < data.length; k++)
             {
                 if (k + i < l)
                 {
