@@ -39,7 +39,7 @@ public final class FFMpegManager
     }
 
     // 先申请一个推送通道
-    public long request(String tag, String rtmpURL) throws Exception
+    public long request(String tag) throws Exception
     {
         if (feeders.size() >= 1024) return -1;
 
@@ -47,7 +47,7 @@ public final class FFMpegManager
         synchronized (lock)
         {
             VideoFeeder feeder = new VideoFeeder(id);
-            feeder.open(tag, rtmpURL);
+            feeder.open(tag);
             feeders.put(id, feeder);
         }
         return id;

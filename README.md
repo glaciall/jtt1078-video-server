@@ -2,11 +2,10 @@
 <ol>
 	<li><a href="#jtt1078-video-server">简介说明</a></li>
     <li><a href="#分支说明">分支说明</a></li>
-    <li><a href="#协议所定义的实时码流数据报文格式">协议所定义的实时码流数据报文格式</a></li>
+    <li><a href="#项目说明">项目说明</a></li>
     <li><a href="#准备工具">准备工具</a></li>
     <li><a href="#测试步骤">测试步骤</a></li>
-    <li><a href="#常见问题">常见问题</a></li>
-    <li><a href="#其它语言实现">其它语言实现</a></li>
+    <li><a href="#TODO">TODO</a></li>
     <li><a href="#致谢">致谢</a></li>
     <li><a href="#交流讨论">交流讨论</a></li>
 </ol>
@@ -23,116 +22,115 @@
 |fifo|通过ffmpeg子进程实现的音视频合并推流RTMP方案|需要linux mkfifo支持|
 |multimedia|通过ffmpeg完成h264到flv封装，并直接提供HTTP-FLV支持的视频方案，音视频通过chunked分块传输到前端直接播放|平台不限|
 
-### 协议所定义的实时码流数据报文格式
+### 项目说明
+本项目接收来自于车载终端发过来的音视频数据，通过ffmpeg完成h264到flv的封装，java原生代码完成G.711A、G.711U、ADPCMA到PCM的转码，项目内集成的http服务器直接提供chunked分块传输来提供FLV或WAV数据至前端网页播放。
 
-|起始字节|字段|数据类型|描述及要求|
-|---|---|---|---|
-|0|帧头标识|DWORD|固定为0x30 0x31 0x63 0x64|
-|4|V|2 BITS|固定为2|
-||P|1 BIT|固定为0|
-||X|1 BIT|RTP头是否需要扩展位，固定为0|
-||CC|4 BITS|固定为1|
-|5|M|1 BIT|标志位，确定是否完整数据帧的边界|
-||PT|7 BITS|负载类型，见表19|
-|6|包序号|WORD|初始为0，每发送一个RTP数据包，序列号加1|
-|8|SIM卡号|BCD[6]|终端设备SIM卡号|
-|14|逻辑通道号|BYTE|按照JT/T 1076-2016中的表2|
-|15|数据类型|4 BITS|0000：数据I祯等|
-||分包处理标记|4 BITS|0000：原子包，不可拆分等|
-|16|时间戳|BYTE[8]|标识此RTP数据包当前祯的相对时间，单位毫秒（ms）。当数据类型为0100时，则没有该字段|
-|24|Last I Frame Interval|WORD|该祯与上一个关键祯之间的时间间隔，单位毫秒（ms），当数据类型为非视频祯时，则没有该字段|
-|26|Last Frame Interval|WORD|该祯与上一个关键祯之间的时间时间，单位毫秒(ms)，当数据类型为非视频祯时，则没有该字段|
-|28|数据体长度|WORD|后续数据体长度，不含此字段|
-|30|数据体|BYTE[n]|音视频数据或透传数据，长度不超过950 byte|
+#### 视频编码支持
+目前几乎所有的终端视频，默认的视频编码都是h264，打包成flv也是非常简单的（以后有时间了自己来做封装），有个别厂家使用avs，但是我没有碰到过。本项目目前也只支持h264编码的视频。
 
-仔细阅读协议文档，需要了解到如下几点：
-1. 视频流发送是不需要回应的，车载终端将一直持续不断的发送。
-2. 1078协议借鉴了RTP协议，但不是真正的RTP协议。
-3. 数据包的第30字节（非视频类的消息包位置不一样）起为视频数据体，可以将每个消息包的这个部分保存到文件中，比如`xx.h264`，可以使用`PotPlayer`来播放。
+#### 音频编码支持
+|音频编码|支持|备注|
+|---|---|---|
+|G.711A|Y|未测试|
+|G.711U|Y|未测试|
+|ADPCMA|Y|完美支持，包括含海思头的（锐明的几乎都有）|
+|G.726|N|尚未实现|
 
-一般来说，视频的推流首先想到的是使用`ffmpeg`，如果要集成`ffmpeg`的sdk或是使用`javacv`、`jcodec`等视频编解码类的库，开发与学习维护的成本很高。在这里我们直接创建`ffmpeg`子进程，通过它的参数设定，让`ffmpeg`子进程直接从**stdin**中读取数据进行转码推流，通过这种方法，可以很好的达到推流的目的，并且不需要整合其它任何第三方的sdk，如果有后续的进一步的扩展需求（比如添加OSD字幕），可以直接通过修改创建子进程时的命令行来达到目的，非常的简单与易维护。
+音频编码太多，也没那么多设备可以测试的，比较常见的就G.711A和ADPCMA这两种，G.726还没有发现哪款终端支持的，没条件测试。另外，音频播放是直接使用PCM到WAV封装的，完全没有压缩，通过BASE64编码后到前端，流量消耗很大，通常比视频还大，这里还需要另外找时间设计个压缩算法才行。
 
-ffmpeg的输入端，可以是stdin、网络流、文件（图片或视频）等几乎所有常见的数据来源，也可以是同时多个输入，功能非常强大，我之前一直使用的是FIFO命名管道，现在可以抛弃对FIFO命名管道的依赖了，并且可以真正的跨平台运行了。
-
-### 准备工具
-1. 安装了`ffmpeg`的机器一台
-2. 安装了`nginx-rtmp-module`或`nginx-http-flv-module`（推荐）的`Nginx`服务器，用于实时视频的转播
-3. `PotPlayer`，可用于播放实时转播的`RTMP`视频
-4. 项目里准备了一个测试程序（`src/main/java/cn.org.hentai.jtt1078.test.VideoPushTest.java`），以及一个数据文件（`src/main/resources/tcpdump.bin`），数据文件是通过工具采集的一段几分钟时长的车载终端发送上来的原始消息包，测试程序可以持续不断的、慢慢的发送数据文件里的内容，用来模拟车载终端发送视频流的过程。
-
-### 测试步骤
-1. 配置好服务器端，确定`ffmpeg`的完整路径，替换掉`app.properties`配置项。
-2. 确保nginx服务器已经启动，同时配置文件里的`rtmp.format`已经设置为正确的RTMP地址格式。
-3. 直接在IDE里运行`cn.org.hentai.jtt1078.app.VideoServerApp`，或对项目进行打包，执行`mvn package`，执行`java -jar jtt1078-video-server-1.0-SNAPSHOT.jar`来启动服务器端。
-4. 运行`VideoPushTest.java`，开始模拟车载终端的视频推送。
-5. 在运行的输出日志里，确定终端的SIM卡号和通道号。
-6. 在浏览器里输入`http://serverip:3333/test/multimedia#SIM-CHANNEL，点击页面上的**play**按钮开始观看视频。
-
-### 常见问题
-1. HLS、HTTP-FLV、RTMP等实时视频都可以通过ffmpeg推流，在RTMP服务器端配置来实现。
-2. 网页端的RTMP播放，之前使用`Aliplayer`，效果很不理想，可以尝试使用`video.js`。
-3. 测试使用`nginx-http-flv-module`+`flv.js`来做网页播放，效果很不错，延迟低，不依赖于flash，值得推荐。
-4. 音频不关注也没有测试，如果有很强的音视频同步传输的需求的话，可以考虑修改程序，将RTP消息包里的音频单独拆分出来，处理后也通过`ffmpeg`子进程合并音轨到视频流中去（我瞎想的）。
-5. RTMP测试工具：[live_test.swf](http://tool.hentai.org.cn/rtmp/)，具有对RTMP流媒体延迟与缓冲测试等功能，RTMP测试必备工具。
-6. `no such publisher`报错，通常是由于`ffmpeg`路径配置错误或是`rtmp`推流失败而导致子进程提前退出而引起的，需要确定`ffmpeg`路径配置及`rtmp`服务器是否正确配置。
-
-### 其它语言实现
-目前，QQ群里已经有网友完成**C++**、**C#**、**Python**等语言的实现、而且也有完成了语音对讲等，基于`ffmpeg`子进程的实现简便易行，对音视频的知识要求已经降低到了很低很低的门槛了，值得推荐。在做其它语言的实现前，我们需要了解一个重要的知识点：`stdio标准输入输出`，一个应用程序在启动时，可以有两种方式传入数据：`命令行参数`或`stdin标准输入流`，命令行参数是广为人知的内容了，比如当我们使用`ping www.baidu.com`时，`www.baidu.com`就是我们交给`ping`这个命令的运行时参数。而`stdin标准输入流`其实也经常使用到，只是一般而言，我们通常不会去关注它的实现，比如当我们使用`ls|grep *.txt`这个命令行，用于列出所有文件，然后过滤只留下`*.txt`时，这就已经使用到了`管道`与`stdin`的功能了，`|`竖线为管道命令，用于把前一个命令行的`stdout`输出内容转为后一个命令的`stdin`输入，在这个例子里，`grep`命令就是从`stdin`里读取数据的，而这个数据就是来自于前一个`ls`命令的输出。这就是`管道`与`stdio`的关系。而我们平常所使用的`System.out`（**Java**）就是`stdout`，相应的`System.in`就是我们的`stdin`。基本上，我们就是需要借用编程语言，来启动一个子进程，让`ffmpeg`能够从`stdin`里读取数据，并且完成编码与推流的过程。
-
-#### stdio标准输入输出
-首先，我们先来进一步的了解一下`stdio`。在这里我们使用**C语言**作为本节的范例。如果我们熟悉了解**Linux**，应当知道**Linux**几乎所有的命令行，一个命令行完成一个工作，彼此之间通过**管道命令**进行联结，所以通常我们可以通过各种拼接组合，来完成很多很复杂的工作，非常的方便，在这里我们也是使用**C语言**这个老前辈语言，来描述一下**stdio**的使用，毕竟绝大部分的编码语言的入口方法是完全贴合于**Unix设计哲学**的。
-
-**stdio**是三个IO流的统称，每个进程在启动时，都会打开这三个流，它们分别是：stdin标准输入流、stdout标准输出流、stderr标准错误流。
-
-```cpp
-#include <stdio.h>
-
-int main(int argc, char** argv)
+#### 音频编码转码扩展实现
+继承并实现`AudioCodec`类的抽象方法，完成任意音频到PCM编码的转码过程，并且补充`AudioCodec.getCodec()`工厂方法即可。`AudioCodec`抽象类原型如下：
+```java
+public abstract class AudioCodec
 {
-    char data[1024];
-    memset(data, 0, 1024);			// 初始化data数组
-    
-    fgets(data, 1024, stdin);		// 从stdin里读取一行内容，最多1024字节
-    
-    fputc('>', stdout);				// 向stdout里写一个字符：>，这里等同于printf(">");
-    fputs(data, stdout);			// 将stdin里读取到的全部输出到stdout里去
-    
-    return 0;						// 返回0表示成功，其它非0表示错误码
+	// 转换至PCM
+    public abstract byte[] toPCM(byte[] data);
+    // 由PCM转为当前编码，可以留空，反正又没有调用
+    public abstract byte[] fromPCM(byte[] data);
 }
 ```
 
-测试一下：
-```bash
-# 编绎
-gcc test.c -o test
+#### 音画同步问题
+目前后端严格的控制了下发数据到前端的时间同步，但是视频的播放要比音频的稍慢（更费时间），所以音画不同步的问题还比较明显，通常是声音相当的及时，而视频画面会稍慢，暂时还没有时间去完善。
 
-# 测试一下
-echo abc | ./test
+### 准备工具
+1. 安装了`ffmpeg`的机器一台
+2. 项目里准备了一个测试程序（`src/main/java/cn.org.hentai.jtt1078.test.VideoPushTest.java`），以及一个数据文件（`src/main/resources/tcpdump.bin`），数据文件是通过工具采集的一段几分钟时长的车载终端发送上来的原始消息包，测试程序可以持续不断的、慢慢的发送数据文件里的内容，用来模拟车载终端发送视频流的过程。
 
-# 控制台上将输出">abc"，如果没有管道后面的内容，将只输出"abc"，在这里我们的管道负责把前一个的输出交给我们的test应用程序的stdin，我们自己的应用程序里可以随意的处理stdin读取到的内容
+### 测试步骤
+1. 配置好服务器端，确定`ffmpeg`的完整路径，替换掉`app.properties`配置项。
+2. 直接在IDE里运行`cn.org.hentai.jtt1078.app.VideoServerApp`，或对项目进行打包，执行`mvn package`，执行`java -jar jtt1078-video-server-1.0-SNAPSHOT.jar`来启动服务器端。
+3. 运行`VideoPushTest.java`，开始模拟车载终端的视频推送。
+4. 开始后，控制台里会输出显示**start publishing: 013800138000-1**的字样
+5. 打开浏览器，输入**http://localhost:3333/test/multimedia#013800138000-1**后回车
+6. 点击网页上的**play video**或**play audio**按钮，开始播放视频或音频
+
+### 项目文件说明
+```
+├── doc（一些文档）
+├── LICENSE
+├── pom.xml
+├── README.md
+├── src
+│   ├── main
+│   │   ├── java
+│   │   │   └── cn
+│   │   │       └── org
+│   │   │           └── hentai
+│   │   │               └── jtt1078
+│   │   │                   ├── app
+│   │   │                   │   └── VideoServerApp.java（主入口程序）
+│   │   │                   ├── codec
+│   │   │                   │   ├── ADPCMCodec.java（ADPCMA编码解码实现）
+│   │   │                   │   ├── AudioCodec.java（音频编码抽象类）
+│   │   │                   │   ├── G711Codec.java（G.711A编码解码实现）
+│   │   │                   │   ├── G711UCodec.java（G.711U编码解码实现）
+│   │   │                   │   └── RawDataCopyCodec.java（无意义的音频转码实现）
+│   │   │                   ├── entity
+│   │   │                   │   └── 几个实体类定义
+│   │   │                   ├── http
+│   │   │                   │   ├── GeneralResponseWriter.java（直接字节数组数据输出）
+│   │   │                   │   └── NettyHttpServerHandler.java（基于netty的HTTP服务处理器）
+│   │   │                   ├── publisher
+│   │   │                   │   └── PublishManager.java（音视频数据片段发布与订阅）
+│   │   │                   ├── server
+│   │   │                   │   ├── Jtt1078Decoder.java（1078协议RTP消息包解码器，含粘包处理）
+│   │   │                   │   ├── Jtt1078Handler.java（1078协议消息处理器）
+│   │   │                   │   ├── Jtt1078MessageDecoder.java（1078协议RTP消息包解码器）
+│   │   │                   │   ├── Session.java（1078连接会话数据容器）
+│   │   │                   │   └── SessionManager.java（会话管理器，用于分配会话id）
+│   │   │                   ├── subscriber
+│   │   │                   │   ├── AudioSubscriber.java（音频数据订阅者）
+│   │   │                   │   ├── Subscriber.java（音视频数据订阅者基类实现）
+│   │   │                   │   └── VideoSubscriber.java（视频数据订阅者）
+│   │   │                   ├── test
+│   │   │                   │   └── VideoPushTest.java（终端数据发送模拟程序）
+│   │   │                   ├── util
+│   │   │                   │   └── 工具方法类
+│   │   │                   └── video
+│   │   │                       ├── FFMpegManager.java（ffmpeg子进程管理器）
+│   │   │                       ├── StdoutCleaner.java（ffmpeg子进程的stderr输出缓冲数据清理）
+│   │   │                       ├── VideoFeeder.java（ffmpeg子进程的视频数据提供者）
+│   │   │                       └── VideoPublisher.java（ffmpeg子进程的输出处理与FLV发布）
+│   │   └── resources
+│   │       ├── app.properties（配置文件）
+│   │       ├── audio.html（音频播放测试页面）
+│   │       ├── log4j.properties（log4j配置）
+│   │       ├── tcpdump.bin（锐明终端模拟数据：视频H264、音频含海思头的ADPCMA）
+│   │       └── multimedia.html（音视频测试页面）
+└─────────────────────────────────────────────────────────────────────────────────────────────────
 ```
 
-#### 主进程与子进程的交互
-当我们在我们自己的应用程序里，启动一个子进程时，通常编程语言本身也会提供对于子进程的`stdio`的读写的API，各位请自行搜索“编码语言 子进程 stdin”等关键词，了解自己所使用的编程语言的相关API。
+### 项目打包说明
+通过**mvn package**直接打包成jar包，通过`java -jar jtt1078-video-server-1.0-SNAPSHOT.jar`即可运行，最好把**app.properties**和**multimedia.html**一并放在同一个目录下，因为项目会优先读取文件系统中的配置文件信息。而如果没有本地测试的需求，**multimedia.html**可以不要。
 
-以Java为例，`Process`类为子进程运行时交互的API，它由`Runtime.getRuntime().exec()`方法来启动子进程从而获得`Process`子进程实例的引用，它提供了如下几个方法，用于与子进程的交互：
+### TODO
+因为个人工作比较忙，还有如下遗留问题，有兴趣的朋友欢迎一起参与进来完善。
 
-|方法原型|返回值说明|说明|
-|---|---|---|
-|int waitFor()|子进程的返回码值，同exitValue()|等待子进程退出，如果子进程一直运行，此方法将一直阻塞|
-|int exitValue()|0表示成功退出，非0表示错误码|获取子进程的返回码值，也就是main方法里return的整型值|
-|InputStream getInputStream()|子进程的stdout|子进程的标准输出流，主进程用来读取子进程的输出|
-|InputStream getErrorStream()|子进程的stderr|子进程的错误输出流，主进程用来读取子进程的错误输出|
-|OutputStream getOutputStream()|子进程的stdin|子进程的标准输入流，主进程用来写入到子进程的标准输入|
-
-这是用于子进程运行时的关键方法，相信其它编程语言一样都有提供，请自行搜索查阅相关的文档。
-
-#### ffmpeg子进程
-我们在主应用程序里，通过运行`ffmpeg -i - -c copy -f flv rtmp://1.2.3.4/ccav/test`来创建一个子进程，`-i -`表示**ffmpeg**将从`stdin`里读取数据，而它的输出将是一个**RTMP URL**，也就是说，它将从`stdin`里读取到的视频数据，经过编码后发送到了**RTMP**服务器上去，然后我们的其它的应用程序就能够通过这个**RTMP URL**来播放这个实时的音视频了。我们需要做的事情如下：
-
-1. `Process process = exec('ffmpeg -i -c copy -f flv rtmp://1.2.3.4/ccav/test');`，通过命令行，创建子进程
-2. `OutputStream stdin = process.getOutputStream();`，得到子进程的stdin所对应的输出流
-3. `stdin.write(...)`，每读取到一个RTP消息包，把数据体部分写到子进程的stdin，如此往复，就能够完成视频的编码与推流了。。。
+- [ ] h264到flv直接封装，取消对ffmpeg的依赖
+- [ ] G.726编码到PCM转码的支持
+- [ ] 音画同步问题
+- [ ] flv封装音频
 
 ### 致谢
 本项目一开始只是个简单的示例项目，在开源、建立QQ交流群后，得到了大批的同道中人的帮助和支持，在此表示谢意。本项目尚未完全完善，非常高兴能够有更多的朋友一起加入进来，一起提出更加闪亮的想法，建设更加强大的视频监控平台！

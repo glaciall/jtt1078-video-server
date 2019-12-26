@@ -34,10 +34,10 @@ public class VideoFeeder extends Thread
         return System.currentTimeMillis() - lastActiveTime > 5000;
     }
 
-    public void open(String tag, String rtmpURL) throws Exception
+    public void open(String tag) throws Exception
     {
         process = Runtime.getRuntime().exec(
-                String.format("%s -loglevel debug -re -r 15 -f h264 -i - -c copy -f flv -probesize 512 -", Configs.get("ffmpeg.path")));
+                String.format(Configs.get("ffmpeg.command.pattern"), Configs.get("ffmpeg.path")));
         output = process.getOutputStream();
         new VideoPublisher(tag, process.getInputStream()).start();
         StdoutCleaner.getInstance().watch(channel, process);
