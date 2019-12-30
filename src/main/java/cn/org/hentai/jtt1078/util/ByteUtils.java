@@ -170,4 +170,27 @@ public final class ByteUtils
             if ((data1[i] & 0xff) != (data2[i] & 0xff)) return false;
         return true;
     }
+
+    // 相当于(short *) byte_pointer的效果
+    public static short[] toShortArray(byte[] src)
+    {
+        short[] dst = new short[src.length / 2];
+        for (int i = 0, k = 0; i < src.length; )
+        {
+            dst[k++] = (short)((src[i++] & 0xff) | ((src[i++] & 0xff) << 8));
+        }
+        return dst;
+    }
+
+    // 相当于(char *) short_pointer的效果
+    public static byte[] toByteArray(short[] src)
+    {
+        byte[] dst = new byte[src.length * 2];
+        for (int i = 0, k = 0; i < src.length; i++)
+        {
+            dst[k++] = (byte)(src[i] & 0xff);
+            dst[k++] = (byte)((src[i] >> 8) & 0xff);
+        }
+        return dst;
+    }
 }
