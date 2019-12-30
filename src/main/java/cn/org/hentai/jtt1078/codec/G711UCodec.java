@@ -40,11 +40,9 @@ public class G711UCodec extends AudioCodec
     static final int ALAW = 2;
 
     /* 16384 entries per table (16 bit) */
-    static byte[] linear_to_alaw = new byte[65536];
     static byte[] linear_to_ulaw = new byte[65536];
 
     /* 16384 entries per table (8 bit) */
-    static short[] alaw_to_linear = new short[256];
     static short[] ulaw_to_linear = new short[256];
 
     static final int SIGN_BIT = 0x80;
@@ -103,7 +101,10 @@ public class G711UCodec extends AudioCodec
 
     static
     {
+        // 初始化ulaw表
         for (int i = 0; i < 256; i++) ulaw_to_linear[i] = ulaw2linear((byte)i);
+        // 初始化ulaw2linear表
+        for (int i = 0; i < 65535; i++) linear_to_ulaw[i] = linear2ulaw((short)i);
     }
 
     static short ulaw2linear(byte u_val)
@@ -116,6 +117,48 @@ public class G711UCodec extends AudioCodec
         return ((u_val & SIGN_BIT) > 0 ? (short)(BIAS - t) : (short)(t - BIAS));
     }
 
+    static byte linear2ulaw(short pcm_val)
+    {
+        short mask;
+        short seg;
+        byte uval;
+
+        pcm_val = (short)(pcm_val >> 2);
+        if (pcm_val < 0)
+        {
+            pcm_val = (short)(-pcm_val);
+            mask = 0x7f;
+        }
+        else
+        {
+            mask = 0xff;
+        }
+
+        if (pcm_val > CLIP) pcm_val = CLIP;
+        pcm_val += (BIAS >> 2);
+
+        seg = search(pcm_val, seg_uend, (short)8);
+
+        if (seg >= 8)
+        {
+            return (byte)(0x7f ^ mask);
+        }
+        else
+        {
+            uval = (byte) ((seg << 4) | ((pcm_val >> (seg + 1)) & 0xF));
+            return (byte)(uval ^ mask);
+        }
+    }
+
+    static short search(short val, short[] table, short size)
+    {
+        for (short i = 0; i < size; i++)
+        {
+            if (val <= table[i]) return i;
+        }
+        return size;
+    }
+
     static void ulaw_to_pcm16(int src_length, byte[] src_samples, byte[] dst_samples)
     {
         for (int i = 0, k = 0; i < src_length; i++)
@@ -123,6 +166,15 @@ public class G711UCodec extends AudioCodec
             short s = ulaw_to_linear[src_samples[i] & 0xff];
             dst_samples[k++] = (byte)(s & 0xff);
             dst_samples[k++] = (byte)((s >> 8) & 0xff);
+        }
+    }
+
+    static void pcm16_to_ulaw(int src_length, byte[] src_samples, byte[] dst_samples)
+    {
+        short[] s_samples = ByteUtils.toShortArray(src_samples);
+        for (int i = 0, k = 0; i < s_samples.length; i++)
+        {
+            dst_samples[k++] = linear2ulaw(s_samples[i]);
         }
     }
 
@@ -137,12 +189,14 @@ public class G711UCodec extends AudioCodec
     @Override
     public byte[] fromPCM(byte[] data)
     {
-        return null;
+        byte[] dest = new byte[data.length / 2];
+        pcm16_to_ulaw(data.length, data, dest);
+        return dest;
     }
 
     public static void main(String[] args) throws Exception
     {
-        FileInputStream fis = new FileInputStream("D:\\temp\\u.g711");
+        FileInputStream fis = new FileInputStream("d:\\fuck121212121.pcm");
         int len = -1;
         byte[] buff = new byte[320];
         AudioCodec codec = new G711UCodec();
@@ -151,6 +205,6 @@ public class G711UCodec extends AudioCodec
         {
             baos.write(buff, 0, len);
         }
-        new FileOutputStream("d:\\fuck121212121.pcm").write(codec.toPCM(baos.toByteArray()));
+        new FileOutputStream("D:\\temp\\fuckfuckfuck.g711u").write(codec.fromPCM(baos.toByteArray()));
     }
 }
