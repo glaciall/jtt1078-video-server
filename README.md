@@ -5,6 +5,7 @@
     <li><a href="#项目说明">项目说明</a></li>
     <li><a href="#准备工具">准备工具</a></li>
     <li><a href="#测试步骤">测试步骤</a></li>
+    <li><a href="#测试环境">测试环境</a></li>
     <li><a href="#TODO">TODO</a></li>
     <li><a href="#致谢">致谢</a></li>
     <li><a href="#交流讨论">交流讨论</a></li>
@@ -19,7 +20,7 @@
 |分支|说明|备注|
 |---|---|---|
 |master|通过ffmpeg子进程实现的纯视频RTMP推流方案|平台不限|
-|fifo|通过ffmpeg子进程实现的音视频合并推流RTMP方案|需要linux mkfifo支持|
+|fifo|通过ffmpeg子进程实现的音视频合并推流RTMP方案（此方案不稳定，已放弃）|需要linux mkfifo支持|
 |multimedia|通过ffmpeg完成h264到flv封装，并直接提供HTTP-FLV支持的视频方案，音视频通过chunked分块传输到前端直接播放|平台不限|
 
 ### 项目说明
@@ -64,6 +65,17 @@ public abstract class AudioCodec
 4. 开始后，控制台里会输出显示**start publishing: 013800138000-1**的字样
 5. 打开浏览器，输入**http://localhost:3333/test/multimedia#013800138000-1**后回车
 6. 点击网页上的**play video**或**play audio**按钮，开始播放视频或音频
+
+### 测试环境
+我在我自己的VPS上搭建了一个1078音视频环境，完全使用了**multimedia**分支上的代码来创建，各位可以让终端将音视频发送到此服务器或是使用**netcat**等网络工具发送模拟数据来仿真终端，来体验音视频的效果。下面我们说一下通过**netcat**来模拟终端的方法：
+
+|标题|说明|
+|---|---|
+|1078音视频服务器|103.213.245.126:10780|
+|实时音视频播放页面|http://1078.hentai.org.cn/test/multimedia#SIM-CHANNEL|
+
+1. 首先，本项目的**/src/main/resources/**下的**tcpdump.bin**即为我抓包存下来的终端音视频数据文件，通过`cat tcpdump.bin | pv -L 30k -q | nc 103.213.245.126 10780`即可以每秒30kBPS的速度，向服务器端且持续的发送数据。
+2. 在浏览器里打开**http://1078.hentai.org.cn/test/multimedia#SIM-CHANNEL**（注意替换掉后面的SIM和CHANNEL，即终端的SIM卡号，不足12位前面补0，CHANNEL即为通道号），然后点击网页上的**play video**或**play audio**即可。
 
 ### 项目文件说明
 ```
