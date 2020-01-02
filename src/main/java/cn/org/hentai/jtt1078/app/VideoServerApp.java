@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
+import java.net.InetAddress;
+
 /**
  * Created by matrixy on 2019/4/9.
  */
@@ -82,7 +84,7 @@ public class VideoServerApp
                     });
 
             int port = Configs.getInt("server.port", 1078);
-            Channel ch = serverBootstrap.bind(port).sync().channel();
+            Channel ch = serverBootstrap.bind(InetAddress.getByName("0.0.0.0"), port).sync().channel();
             logger.info("Video Server started at: {}", port);
             ch.closeFuture();
         }
@@ -133,8 +135,8 @@ public class VideoServerApp
             try
             {
                 int port = Configs.getInt("server.http.port", 3333);
-                ChannelFuture f = bootstrap.bind(port).sync();
-                logger.info("HTTP Proxy Server started at: {}", port);
+                ChannelFuture f = bootstrap.bind(InetAddress.getByName("0.0.0.0"), port).sync();
+                logger.info("HTTP Server started at: {}", port);
                 f.channel().closeFuture().sync();
             }
             catch (InterruptedException e)

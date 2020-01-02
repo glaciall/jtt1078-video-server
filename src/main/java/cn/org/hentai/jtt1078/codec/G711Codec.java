@@ -109,7 +109,7 @@ public class G711Codec extends AudioCodec
         byte[] g711data = new byte[pcmdata.length / 2];
         for (int i = 0, k = 0; i < pcmdata.length; i+=2,k++)
         {
-            short v = (short)((pcmdata[i] << 8) | (pcmdata[i + 1]));
+            short v = (short)((pcmdata[i + 1] << 8) | (pcmdata[i]));
             g711data[k] = linear2alaw(v);
         }
         return g711data;
