@@ -22,9 +22,10 @@
 |master|通过ffmpeg子进程实现的纯视频RTMP推流方案|平台不限|
 |fifo|通过ffmpeg子进程实现的音视频合并推流RTMP方案（此方案不稳定，已放弃）|需要linux mkfifo支持|
 |multimedia|通过ffmpeg完成h264到flv封装，并直接提供HTTP-FLV支持的视频方案，音视频通过chunked分块传输到前端直接播放|平台不限|
+|flv|直接使用java完成h264到flv的封装，并直接提供HTTP-FLV支持的视频方案，音频通过chunked分块传输到前端进行播放|平台不限|
 
 ### 项目说明
-本项目接收来自于车载终端发过来的音视频数据，通过ffmpeg完成h264到flv的封装，java原生代码完成G.711A、G.711U、ADPCMA到PCM的转码，项目内集成的http服务器直接提供chunked分块传输来提供FLV或WAV数据至前端网页播放。
+本项目接收来自于车载终端发过来的音视频数据，视频直接做flv的封装，音频完成G.711A、G.711U、ADPCMA到PCM的转码，项目内集成的http服务器直接提供chunked分块传输来提供FLV或WAV数据至前端网页播放。
 
 #### 视频编码支持
 目前几乎所有的终端视频，默认的视频编码都是h264，打包成flv也是非常简单的（以后有时间了自己来做封装），有个别厂家使用avs，但是我没有碰到过。本项目目前也只支持h264编码的视频。
@@ -55,11 +56,10 @@ public abstract class AudioCodec
 目前后端严格的控制了下发数据到前端的时间同步，但是视频的播放要比音频的稍慢（更费时间），所以音画不同步的问题还比较明显，通常是声音相当的及时，而视频画面会稍慢，暂时还没有时间去完善。
 
 ### 准备工具
-1. 安装了`ffmpeg`的机器一台
-2. 项目里准备了一个测试程序（`src/main/java/cn.org.hentai.jtt1078.test.VideoPushTest.java`），以及一个数据文件（`src/main/resources/tcpdump.bin`），数据文件是通过工具采集的一段几分钟时长的车载终端发送上来的原始消息包，测试程序可以持续不断的、慢慢的发送数据文件里的内容，用来模拟车载终端发送视频流的过程。
+项目里准备了一个测试程序（`src/main/java/cn.org.hentai.jtt1078.test.VideoPushTest.java`），以及一个数据文件（`src/main/resources/tcpdump.bin`），数据文件是通过工具采集的一段几分钟时长的车载终端发送上来的原始消息包，测试程序可以持续不断的、慢慢的发送数据文件里的内容，用来模拟车载终端发送视频流的过程。
 
 ### 测试步骤
-1. 配置好服务器端，确定`ffmpeg`的完整路径，替换掉`app.properties`配置项。
+1. 配置好服务器端，修改`app.properties`里的配置项。
 2. 直接在IDE里运行`cn.org.hentai.jtt1078.app.VideoServerApp`，或对项目进行打包，执行`mvn package`，执行`java -jar jtt1078-video-server-1.0-SNAPSHOT.jar`来启动服务器端。
 3. 运行`VideoPushTest.java`，开始模拟车载终端的视频推送。
 4. 开始后，控制台里会输出显示**start publishing: 013800138000-1**的字样
@@ -139,7 +139,7 @@ public abstract class AudioCodec
 ### TODO
 因为个人工作比较忙，还有如下遗留问题，有兴趣的朋友欢迎一起参与进来完善。
 
-- [ ] h264到flv直接封装，取消对ffmpeg的依赖
+- [x] h264到flv直接封装，取消对ffmpeg的依赖
 - [ ] G.726编码到PCM转码的支持
 - [ ] 音画同步问题
 - [ ] flv封装音频
