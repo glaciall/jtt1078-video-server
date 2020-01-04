@@ -1,5 +1,6 @@
 package cn.org.hentai.jtt1078.test;
 
+import cn.org.hentai.jtt1078.flv.FlvEncoder;
 import cn.org.hentai.jtt1078.h264.NALU;
 import cn.org.hentai.jtt1078.server.Jtt1078Decoder;
 import cn.org.hentai.jtt1078.util.ByteHolder;
@@ -7,6 +8,7 @@ import cn.org.hentai.jtt1078.util.ByteUtils;
 import cn.org.hentai.jtt1078.util.Packet;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 
 /**
@@ -16,7 +18,7 @@ public class RTPTest
 {
     public static void main(String[] args) throws Exception
     {
-        InputStream fis = new FileInputStream("e:\\test\\streaming.hex");
+        InputStream fis = new FileInputStream("e:\\test\\streamax.bin");
         int len = -1;
         byte[] block = new byte[1024];
         Jtt1078Decoder decoder = new Jtt1078Decoder();
@@ -25,6 +27,12 @@ public class RTPTest
         ByteHolder buffer = new ByteHolder(1096 * 100);
         NALU.Type[] naluTypes = NALU.Type.values();
         String profile = null;
+
+        FileOutputStream fos = new FileOutputStream("e:\\test\\fuckfuckfuck.flv");
+        FlvEncoder flvEncoder = new FlvEncoder();
+        flvEncoder.open(fos, true, false);
+
+        int timestamp = 0;
 
         while ((len = fis.read(block)) > -1)
         {
@@ -60,32 +68,16 @@ public class RTPTest
                             buffer.sliceInto(nalu, i);
                             i = 0;
 
-                            int naluType = nalu[4] & 0x1f;
-                            // System.out.println(naluTypes[naluType]);
-                            if (naluType == NALU.Type.PPS.ordinal())
-                            {
-                                // ByteUtils.dump(nalu);
-                                // System.out.println("*******************************************************");
-                            }
-                            else if (naluType == NALU.Type.SPS.ordinal())
-                            {
-                                if (profile != null) continue;
-                                switch (nalu[5])
-                                {
-                                    case 66 : profile = "baseline"; break;
-                                    case 77 : profile = "main"; break;
-                                    case 88 : profile = "extended"; break;
-                                    default : profile = "unknown";
-                                }
-                                System.out.println("Profile: " + profile);
+                            if (nalu.length < 4) continue;
 
-                                parseSPS(nalu, 32);
-                            }
+                            flvEncoder.write(nalu, timestamp += 67);
                         }
                     }
                 }
             }
         }
+
+        flvEncoder.close();
     }
 
 
