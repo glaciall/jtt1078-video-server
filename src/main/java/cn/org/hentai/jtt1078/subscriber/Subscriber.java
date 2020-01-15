@@ -1,8 +1,7 @@
 package cn.org.hentai.jtt1078.subscriber;
 
-import cn.org.hentai.jtt1078.entity.Media;
-import cn.org.hentai.jtt1078.publisher.PublishManager;
-import cn.org.hentai.jtt1078.server.SessionManager;
+import cn.org.hentai.jtt1078.flv.FlvEncoder;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,96 +10,79 @@ import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Created by houcheng on 2019-12-11.
+ * Created by matrixy on 2020/1/11.
  */
 public abstract class Subscriber extends Thread
 {
     static Logger logger = LoggerFactory.getLogger(Subscriber.class);
-    protected static AtomicLong sequence = new AtomicLong(0L);
+    static final AtomicLong SEQUENCE = new AtomicLong(0L);
 
-    private Object lock;
+    private long id;
     private String tag;
-
-    private long sessionId;
-    private long lastDataSendTime;
-
-    private ChannelHandlerContext ctx;
-    private LinkedList<Media> messages;
+    private Object lock;
+    private ChannelHandlerContext context;
+    protected LinkedList<byte[]> messages;
 
     public Subscriber(String tag, ChannelHandlerContext ctx)
     {
         this.tag = tag;
-        this.ctx = ctx;
+        this.context = ctx;
         this.lock = new Object();
-        this.messages = new LinkedList<Media>();
-        this.lastDataSendTime = System.currentTimeMillis();
+        this.messages = new LinkedList<byte[]>();
+
+        this.id = SEQUENCE.getAndAdd(1L);
     }
 
-    public void setThreadNameTag(String nameTag)
+    public long getId()
     {
-        this.setName(nameTag + "-" + sequence.addAndGet(1L));
+        return this.id;
     }
 
-    public void aware(Media message)
+    public abstract void onData(long timeoffset, byte[] data, FlvEncoder flvEncoder);
+
+    public void enqueue(byte[] data)
     {
-        synchronized (this.lock)
+        if (data == null) return;
+        synchronized (lock)
         {
-            this.messages.addLast(message);
+            messages.addLast(data);
             lock.notify();
         }
     }
 
     public void run()
     {
-        String sessionTag = tag.substring(6);
-        SessionManager sessionManager = SessionManager.getInstance();
         loop : while (!this.isInterrupted())
         {
             try
             {
-                Media media = null;
+                byte[] data = null;
                 synchronized (lock)
                 {
-                    while (messages.size() == 0)
+                    while (messages.isEmpty())
                     {
-                        lock.wait(1000);
-                        // TODO: 需要检查一下终端连接的状态，是否依然在推流中
-                        if (sessionManager.isAlive(sessionTag) == false) break loop;
+                        lock.wait(100);
+                        if (this.isInterrupted()) break loop;
                     }
-                    media = messages.removeFirst();
-                    if (lastDataSendTime == 0L) lastDataSendTime = System.currentTimeMillis();
+                    data = messages.removeFirst();
                 }
-
-                // System.out.println(String.format("send %s: %6d", media.type, media.sequence));
-                onData(ctx, media);
-                lastDataSendTime = System.currentTimeMillis();
+                send(data);
             }
             catch(Exception ex)
             {
-                logger.error("send error", ex);
-                break;
+                logger.error("send failed", ex);
             }
         }
-
-        PublishManager.getInstance().free(tag, this);
-        logger.info("subscriber: {} finished...", tag);
+        logger.info("subscriber closed");
     }
 
-    protected long getLastDataSendTime()
+    public void close()
     {
-        return lastDataSendTime;
+        this.interrupt();
     }
 
-    // 当数据到达时调用，需要完成转码并下发的过程
-    public abstract void onData(ChannelHandlerContext ctx, Media media) throws Exception;
-
-    public String getTag()
+    public ChannelFuture send(byte[] message)
     {
-        return tag;
-    }
-
-    public void setTag(String tag)
-    {
-        this.tag = tag;
+        return context.writeAndFlush(message);
     }
 }

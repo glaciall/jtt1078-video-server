@@ -6,18 +6,18 @@ package cn.org.hentai.jtt1078.entity;
  */
 public class Media
 {
-    public enum Type { video, audio };
+    public enum Type { Video, Audio };
 
     public Type type;
     public MediaEncoding.Encoding encoding;
     public long sequence;
     public byte[] data;
 
-    public Media(long seq, Type type, int payloadType, byte[] data)
+    public Media(long seq, MediaEncoding.Encoding encoding, byte[] data)
     {
         this.type = type;
         this.data = data;
-        this.encoding = MediaEncoding.getEncoding(type, payloadType);
+        this.encoding = encoding;
         this.sequence = seq;
     }
 }

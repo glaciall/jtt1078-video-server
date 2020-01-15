@@ -46,7 +46,7 @@ public final class MediaEncoding
 
     public static Encoding getEncoding(Media.Type type, int pt)
     {
-        if (type.equals(Media.Type.audio))
+        if (type.equals(Media.Type.Audio))
         {
             if (pt >= 0 && pt <= 28) return Encoding.values()[pt];
             else return Encoding.UNKNOWN;

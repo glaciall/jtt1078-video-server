@@ -1,45 +1,34 @@
 package cn.org.hentai.jtt1078.subscriber;
 
-import cn.org.hentai.jtt1078.codec.AudioCodec;
-import cn.org.hentai.jtt1078.entity.Media;
-import cn.org.hentai.jtt1078.util.Packet;
+import cn.org.hentai.jtt1078.flv.FlvEncoder;
+import cn.org.hentai.jtt1078.util.ByteUtils;
 import cn.org.hentai.jtt1078.util.WAVUtils;
 import io.netty.channel.ChannelHandlerContext;
 import sun.misc.BASE64Encoder;
 
 /**
- * Created by matrixy on 2019/12/20.
+ * Created by matrixy on 2020/1/13.
  */
 public class AudioSubscriber extends Subscriber
 {
-    private Packet packet = null;
-    AudioCodec codec = null;
-
     public AudioSubscriber(String tag, ChannelHandlerContext ctx)
     {
         super(tag, ctx);
-        this.setThreadNameTag("audio-subscriber");
-        packet = Packet.create(2048);
     }
 
     @Override
-    public void onData(ChannelHandlerContext ctx, Media media) throws Exception
+    public void onData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
     {
-        if (codec == null)
-        {
-            codec = AudioCodec.getCodec(media.encoding);
-            logger.debug("Audio Codec: {}", media.encoding);
-        }
-        byte[] pcmData = codec.toPCM(media.data);
-        packet.reset();
-        packet.addBytes(WAVUtils.createHeader(pcmData.length, 1, 8000, 16));
-        packet.addBytes(pcmData);
+        byte[] wav = ByteUtils.concat(WAVUtils.createHeader(data.length, 1, 8000, 16), data);
+        String audioData = new BASE64Encoder().encode(wav).replaceAll("[\r\n]+", "");
 
-        String audioData = new BASE64Encoder().encode(packet.getBytes()).replaceAll("[\r\n]+", "");
+        byte[] output = ByteUtils.concat(
+                String.format("%x\r\n", audioData.length() + 8).getBytes(),
+                String.format("%08x", audioData.length()).getBytes(),
+                audioData.getBytes(),
+                "\r\n".getBytes()
+        );
 
-        ctx.writeAndFlush(String.format("%x\r\n", audioData.length() + 8).getBytes());
-        ctx.writeAndFlush(String.format("%08x", audioData.length()).getBytes());
-        ctx.writeAndFlush(audioData.getBytes());
-        ctx.writeAndFlush("\r\n".getBytes()).await();
+        enqueue(output);
     }
 }

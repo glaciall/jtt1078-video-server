@@ -71,6 +71,14 @@ public class Packet
         return this;
     }
 
+    public Packet add3Bytes(int v)
+    {
+        this.data[size++] = (byte)((v >> 16) & 0xff);
+        this.data[size++] = (byte)((v >>  8) & 0xff);
+        this.data[size++] = (byte)((v >>  0) & 0xff);
+        return this;
+    }
+
     // 如果b的值为0x7e，则自动转义
     public Packet addByteAutoQuote(byte b)
     {

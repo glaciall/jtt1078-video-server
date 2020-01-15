@@ -18,7 +18,7 @@ public class VideoServer
     {
         System.out.println("started...");
 
-        String command = ("ffmpeg -f h264 -i /opt/test/xxoo.video -f sln -ar 8000 -ac 1 -i /opt/test/xxoo.audio -vcodec copy -acodec aac -map 0:v:0 -map 1:a:0 -probesize 512 -analyzeduration 100 -f flv rtmp://localhost/live/fuck");
+        String command = ("ffmpeg -f h264 -i /opt/test/xxoo.Video -f sln -ar 8000 -ac 1 -i /opt/test/xxoo.Audio -vcodec copy -acodec aac -map 0:v:0 -map 1:a:0 -probesize 512 -analyzeduration 100 -f flv rtmp://localhost/live/fuck");
         Process process = Runtime.getRuntime().exec(command);
         new Reader(process.getErrorStream()).start();
 
@@ -140,7 +140,7 @@ public class VideoServer
     {
         public void run()
         {
-            FileOutputStream fos = open("/opt/test/xxoo.video");
+            FileOutputStream fos = open("/opt/test/xxoo.Video");
             while (!this.isInterrupted())
             {
                 try
@@ -162,7 +162,7 @@ public class VideoServer
     {
         public void run()
         {
-            FileOutputStream fos = open("/opt/test/xxoo.audio");
+            FileOutputStream fos = open("/opt/test/xxoo.Audio");
             while (!this.isInterrupted())
             {
                 try

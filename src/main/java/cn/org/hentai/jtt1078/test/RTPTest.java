@@ -1,7 +1,6 @@
 package cn.org.hentai.jtt1078.test;
 
 import cn.org.hentai.jtt1078.flv.FlvEncoder;
-import cn.org.hentai.jtt1078.h264.NALU;
 import cn.org.hentai.jtt1078.server.Jtt1078Decoder;
 import cn.org.hentai.jtt1078.util.ByteHolder;
 import cn.org.hentai.jtt1078.util.ByteUtils;
@@ -25,12 +24,11 @@ public class RTPTest
 
         int bufferOffset = 0;
         ByteHolder buffer = new ByteHolder(1096 * 100);
-        NALU.Type[] naluTypes = NALU.Type.values();
         String profile = null;
 
         FileOutputStream fos = new FileOutputStream("e:\\test\\fuckfuckfuck.flv");
-        FlvEncoder flvEncoder = new FlvEncoder();
-        flvEncoder.open(fos, true, false);
+        FlvEncoder flvEncoder = null; // new FlvEncoder();
+        // flvEncoder.open(fos, true, false);
 
         int timestamp = 0;
 
@@ -77,7 +75,7 @@ public class RTPTest
             }
         }
 
-        flvEncoder.close();
+        // flvEncoder.close();
     }
 
 

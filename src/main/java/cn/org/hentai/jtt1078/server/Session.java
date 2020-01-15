@@ -21,6 +21,11 @@ public final class Session
         return this;
     }
 
+    public boolean has(String key)
+    {
+        return this.attributes.containsKey(key);
+    }
+
     public Set<String> keys()
     {
         return this.attributes.keySet();

@@ -1,11 +1,11 @@
 package cn.org.hentai.jtt1078.server;
 
+import cn.org.hentai.jtt1078.entity.Media;
+import cn.org.hentai.jtt1078.entity.MediaEncoding;
+import cn.org.hentai.jtt1078.publisher.Channel;
 import cn.org.hentai.jtt1078.publisher.PublishManager;
 import cn.org.hentai.jtt1078.entity.Audio;
-import cn.org.hentai.jtt1078.util.Configs;
 import cn.org.hentai.jtt1078.util.Packet;
-import cn.org.hentai.jtt1078.video.FFMpegManager;
-import cn.org.hentai.jtt1078.video.StdoutCleaner;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.Attribute;
@@ -31,27 +31,16 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         packet.seek(8);
         String sim = packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD();
         int channel = packet.nextByte() & 0xff;
+        String tag = sim + "-" + channel;
 
         Session session = getSession();
         if (null == session)
         {
             setSession(session = new Session());
-        }
-
-        String channelKey = String.format("publisher-%d", channel);
-        String tag = sim + "-" + channel;
-        Long publisherId = session.get(channelKey);
-        if (publisherId == null)
-        {
-            publisherId = FFMpegManager.getInstance().request("video-" + tag);
-            if (publisherId == -1) throw new RuntimeException("exceed max concurrent stream pushing limitation");
-            session.set(channelKey, publisherId);
-
-            logger.info("start publishing: {}", tag);
-
-            long sessionId = SessionManager.getInstance().register(tag);
-            session.set("sessionId", sessionId);
             session.set("tag", tag);
+
+            Channel chl = PublishManager.getInstance().open(tag);
+            logger.info("channel opened: {} -> {}-{}", Long.toHexString(chl.hashCode() & 0xffffffffL), sim, channel);
         }
 
         Integer sequence = session.get("video-sequence");
@@ -75,11 +64,13 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
                 sequence += 1;
                 session.set("video-sequence", sequence);
             }
-            FFMpegManager.getInstance().feed(publisherId, packet.seek(lengthOffset + 2).nextBytes());
+            long timestamp = packet.seek(16).nextLong();
+            PublishManager.getInstance().publishVideo(tag, sequence, timestamp, pt, packet.seek(lengthOffset + 2).nextBytes());
         }
         else if (dataType == 0x03)
         {
-            PublishManager.getInstance().publish("audio-" + tag, new Audio(sequence, pt, packet.seek(lengthOffset + 2).nextBytes()));
+            long timestamp = packet.seek(16).nextLong();
+            PublishManager.getInstance().publishAudio(tag, sequence, timestamp, pt, packet.seek(lengthOffset + 2).nextBytes());
         }
     }
 
@@ -114,24 +105,10 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
     private void release()
     {
         String tag = getSession().get("tag");
-        if (tag != null) SessionManager.getInstance().unregister(tag);
-
-        Session session = getSession();
-        if (session != null)
+        if (tag != null)
         {
-            Iterator itr = session.attributes.keySet().iterator();
-            while (itr.hasNext())
-            {
-                Object key = itr.next();
-                Object val = session.attributes.get(key);
-
-                if (val instanceof java.lang.Long && key.toString().startsWith("publisher"))
-                {
-                    long channel = Long.parseLong(val.toString());
-                    FFMpegManager.getInstance().close(channel);
-                    StdoutCleaner.getInstance().unwatch(channel);
-                }
-            }
+            logger.info("release netty channel: {}", tag);
+            PublishManager.getInstance().close(tag);
         }
     }
 }

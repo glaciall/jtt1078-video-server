@@ -11,11 +11,11 @@ public abstract class AudioCodec
     public abstract byte[] toPCM(byte[] data);
     public abstract byte[] fromPCM(byte[] data);
 
-    public static AudioCodec getCodec(MediaEncoding.Encoding encoding)
+    public static AudioCodec getCodec(int encoding)
     {
-        if (MediaEncoding.Encoding.ADPCMA.equals(encoding)) return new ADPCMCodec();
-        else if (MediaEncoding.Encoding.G711A.equals(encoding)) return new G711Codec();
-        else if (MediaEncoding.Encoding.G711U.equals(encoding)) return new G711UCodec();
+        if (MediaEncoding.Encoding.ADPCMA.ordinal() == encoding) return new ADPCMCodec();
+        else if (MediaEncoding.Encoding.G711A.ordinal() == encoding) return new G711Codec();
+        else if (MediaEncoding.Encoding.G711U.ordinal() == encoding) return new G711UCodec();
         // else if (Audio.Encoding.G726.equals(encoding)) ;
         else return new RawDataCopyCodec();
     }

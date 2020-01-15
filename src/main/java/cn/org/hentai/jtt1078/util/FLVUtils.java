@@ -8,23 +8,17 @@ import java.util.Arrays;
 public final class FLVUtils
 {
     // 重置FLV的时间戳
-    public static byte[] resetTimestamp(byte[] packet, int timestamp)
+    public static void resetTimestamp(byte[] packet, int timestamp)
     {
         // 0 1 2 3
         // 4 5 6 7
-        byte[] flvData = Arrays.copyOf(packet, packet.length);
-
         // 只对视频类的TAG进行修改
-        if (flvData[0] != 9) return flvData;
+        if (packet[0] != 9) return;
 
-        flvData[4] = (byte)((timestamp >> 16) & 0xff);
-        flvData[5] = (byte)((timestamp >>  8) & 0xff);
-        flvData[6] = (byte)((timestamp >>  0) & 0xff);
-        flvData[7] = (byte)((timestamp >> 24) & 0xff);
-
-        // ByteUtils.dump(flvData, 32);
-
-        return flvData;
+        packet[4] = (byte)((timestamp >> 16) & 0xff);
+        packet[5] = (byte)((timestamp >>  8) & 0xff);
+        packet[6] = (byte)((timestamp >>  0) & 0xff);
+        packet[7] = (byte)((timestamp >> 24) & 0xff);
     }
 }
 

@@ -1,32 +1,56 @@
 package cn.org.hentai.jtt1078.subscriber;
 
-import cn.org.hentai.jtt1078.entity.Media;
+import cn.org.hentai.jtt1078.flv.FlvEncoder;
 import cn.org.hentai.jtt1078.util.FLVUtils;
+import cn.org.hentai.jtt1078.util.HttpChunk;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * Created by matrixy on 2019/12/20.
+ * Created by matrixy on 2020/1/13.
  */
 public class VideoSubscriber extends Subscriber
 {
-    private int timestamp;
+    private int timestamp = 0;
+    private long lastFrameTimeOffset = 0;
+    private boolean headerSend = false;
 
     public VideoSubscriber(String tag, ChannelHandlerContext ctx)
     {
         super(tag, ctx);
-        this.setThreadNameTag("video-subscriber");
-        this.timestamp = 0;
     }
 
     @Override
-    public void onData(ChannelHandlerContext ctx, Media media) throws Exception
+    public void onData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
     {
-        // System.out.println(String.format("[Video] type: %s, size: %6d", media.type, media.data.length));
-        long duration = System.currentTimeMillis() - getLastDataSendTime();
-        timestamp += duration;
+        if (lastFrameTimeOffset == 0) lastFrameTimeOffset = timeoffset;
 
-        ctx.writeAndFlush(String.format("%x\r\n", media.data.length).getBytes());
-        ctx.writeAndFlush(FLVUtils.resetTimestamp(media.data, timestamp));
-        ctx.writeAndFlush("\r\n".getBytes()).await();
+        // 之前是不是已经发送过了？没有的话，需要补发FLV HEADER的。。。
+        if (headerSend == false && flvEncoder.videoReady())
+        {
+            enqueue(HttpChunk.make(flvEncoder.getHeader().getBytes()));
+            enqueue(HttpChunk.make(flvEncoder.getVideoHeader().getBytes()));
+
+            // 如果第一次发送碰到的不是I祯，那就把上一个缓存的I祯发下去
+            if ((data[4] & 0x1f) != 0x05)
+            {
+                byte[] iFrame = flvEncoder.getLastIFrame();
+                if (iFrame != null)
+                {
+                    FLVUtils.resetTimestamp(iFrame, timestamp);
+                    // enqueue(HttpChunk.make(iFrame));
+                }
+            }
+
+            headerSend = true;
+        }
+
+        if (data == null) return;
+
+        // 修改时间戳
+        FLVUtils.resetTimestamp(data, timestamp);
+        timestamp += (int)(timeoffset - lastFrameTimeOffset);
+        lastFrameTimeOffset = timeoffset;
+
+        enqueue(HttpChunk.make(data));
     }
 }

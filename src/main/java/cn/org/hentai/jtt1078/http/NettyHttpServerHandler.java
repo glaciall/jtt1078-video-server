@@ -1,12 +1,16 @@
 package cn.org.hentai.jtt1078.http;
 
+import cn.org.hentai.jtt1078.entity.Media;
 import cn.org.hentai.jtt1078.publisher.PublishManager;
+import cn.org.hentai.jtt1078.server.Session;
 import cn.org.hentai.jtt1078.util.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.misc.BASE64Decoder;
@@ -25,6 +29,8 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
     static Logger logger = LoggerFactory.getLogger(NettyHttpServerHandler.class);
     static final byte[] HTTP_403_DATA = "<h1>403 Forbidden</h1><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding--><!--padding-->".getBytes();
     static final String HEADER_ENCODING = "ISO-8859-1";
+
+    private static final AttributeKey<Session> SESSION_KEY = AttributeKey.valueOf("session");
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) throws Exception
@@ -48,7 +54,8 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
             ctx.writeAndFlush(resp.getBytes()).await();
 
             // 订阅视频数据
-            PublishManager.getInstance().subscribe("video-" + tag, ctx);
+            long wid = PublishManager.getInstance().subscribe(tag, Media.Type.Video, ctx).getId();
+            setSession(ctx, new Session().set("subscriber-id", wid).set("tag", tag));
         }
         else if (uri.startsWith("/audio/"))
         {
@@ -66,13 +73,14 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
             ctx.writeAndFlush(resp.getBytes()).await();
 
             // 订阅音频数据
-            PublishManager.getInstance().subscribe("audio-" + tag, ctx);
+            long wid = PublishManager.getInstance().subscribe(tag, Media.Type.Audio, ctx).getId();
+            setSession(ctx, new Session().set("subscriber-id", wid).set("tag", tag));
         }
-        else if (uri.equals("/test/audio"))
+        else if (uri.equals("/test/Audio"))
         {
             responseHTMLFile("/audio.html", ctx);
         }
-        else if (uri.equals("/test/video"))
+        else if (uri.equals("/test/Video"))
         {
             responseHTMLFile("/video.html", ctx);
         }
@@ -89,6 +97,19 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
             response.headers().add("Content-Length", HTTP_403_DATA.length);
             ctx.writeAndFlush(response).await();
             ctx.flush();
+        }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception
+    {
+        super.channelInactive(ctx);
+        Session session = getSession(ctx);
+        if (session != null && session.has("subscriber-id") && session.has("tag"))
+        {
+            String tag = session.get("tag");
+            Long wid = session.get("subscriber-id");
+            PublishManager.getInstance().unsubscribe(tag, wid);
         }
     }
 
@@ -115,6 +136,18 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
     {
         ctx.close();
         cause.printStackTrace();
+    }
+
+    public final void setSession(ChannelHandlerContext context, Session session)
+    {
+        context.channel().attr(SESSION_KEY).set(session);
+    }
+
+    public final Session getSession(ChannelHandlerContext context)
+    {
+        Attribute<Session> attr = context.channel().attr(SESSION_KEY);
+        if (null == attr) return null;
+        else return attr.get();
     }
 }
 

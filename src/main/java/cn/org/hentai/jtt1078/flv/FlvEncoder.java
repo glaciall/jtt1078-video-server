@@ -2,6 +2,7 @@ package cn.org.hentai.jtt1078.flv;
 
 import cn.org.hentai.jtt1078.util.Packet;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -11,12 +12,14 @@ import java.io.OutputStream;
 public final class FlvEncoder
 {
     Packet flvHeader;
+    Packet videoHeader;
     Packet SPS, PPS;
     int SPSSize, PPSSize;
     boolean writeAVCSeqHeader;
     int prevTagSize;
     int streamID;
     int videoTimeStamp;
+    byte[] lastIFrame;
 
     Packet _pAudioSpecificConfig;
     int _nAudioConfigSize;
@@ -25,31 +28,48 @@ public final class FlvEncoder
     int _channelConfig;
     int _bWriteAACSeqHeader;
 
-    OutputStream output;
     boolean haveAudio, haveVideo;
 
-    public FlvEncoder()
-    {
-        flvHeader = Packet.create(16);
-    }
+    ByteArrayOutputStream videoFrame;
 
-    public void open(OutputStream os, boolean haveVideo, boolean haveAudio) throws IOException
+    public FlvEncoder(boolean haveVideo, boolean haveAudio)
     {
-        this.output = os;
-        this.haveAudio = haveAudio;
         this.haveVideo = haveVideo;
+        this.haveAudio = haveAudio;
+        flvHeader = Packet.create(16);
+        videoFrame = new ByteArrayOutputStream(4096 * 100);
         makeFlvHeader();
     }
 
-    public boolean write(byte[] nalu, int nTimeStamp) throws IOException
+    public Packet getHeader()
+    {
+        return flvHeader;
+    }
+
+    public Packet getVideoHeader()
+    {
+        return videoHeader;
+    }
+
+    public boolean videoReady()
+    {
+        return writeAVCSeqHeader;
+    }
+
+    public byte[] getLastIFrame()
+    {
+        return this.lastIFrame;
+    }
+
+    public byte[] write(byte[] nalu, int nTimeStamp)
     {
         this.videoTimeStamp = nTimeStamp;
 
-        if (nalu == null || nalu.length <= 4) return false;
+        if (nalu == null || nalu.length <= 4) return null;
 
         int naluType = nalu[4] & 0x1f;
         // skip SEI
-        if (naluType == 0x06) return false;
+        if (naluType == 0x06) return null;
         if (SPS == null && naluType == 0x07)
         {
             SPS = Packet.create(nalu);
@@ -65,14 +85,23 @@ public final class FlvEncoder
             writeH264Header(nTimeStamp);
             writeAVCSeqHeader = true;
         }
-        if (writeAVCSeqHeader == false) return true;
+        if (writeAVCSeqHeader == false) return null;
 
+        videoFrame.reset();
         writeH264Frame(nalu, nTimeStamp);
 
-        return true;
+        if (videoFrame.size() == 0) return null;
+
+        // 如果当前NAL单元为I祯，则缓存一个
+        if (naluType == 0x05)
+        {
+            lastIFrame = videoFrame.toByteArray();
+        }
+
+        return videoFrame.toByteArray();
     }
 
-    void makeFlvHeader() throws IOException
+    void makeFlvHeader()
     {
         flvHeader.addByte((byte)'F');
         flvHeader.addByte((byte)'L');
@@ -80,56 +109,55 @@ public final class FlvEncoder
         flvHeader.addByte((byte)0x01);                 // version
         flvHeader.addByte((byte)(0x00 | (haveVideo ? 0x01 : 0x00) | (haveAudio ? 0x04 : 0x00)));
         flvHeader.addInt(0x09);
-
-        output.write(flvHeader.getBytes());
+        flvHeader.addInt(0x00);
     }
 
-    void writeH264Header(int nTimeStamp) throws IOException
+    void writeH264Header(int nTimeStamp)
     {
-        writeU4(prevTagSize);
+        int nDataSize = 1 + 1 + 3 + 6 + 2 + (SPSSize - 4) + 1 + 2 + (PPSSize - 4);
+        videoHeader = Packet.create(nDataSize + 32);
 
         byte cTagType = 0x09;
-        write(cTagType);
+        videoHeader.addByte(cTagType);
 
-        int nDataSize = 1 + 1 + 3 + 6 + 2 + (SPSSize - 4) + 1 + 2 + (PPSSize - 4);
-        writeU3(nDataSize);
+        videoHeader.add3Bytes(nDataSize);
 
-        writeU3(nTimeStamp);
-        writeByte(nTimeStamp >> 24);
+        videoHeader.add3Bytes(nTimeStamp);
+        videoHeader.addByte((byte)(nTimeStamp >> 24));
 
-        writeU3(streamID);
+        videoHeader.add3Bytes(streamID);
 
         byte cVideoParam = 0x17;
-        write(cVideoParam);
+        videoHeader.addByte(cVideoParam);
 
         byte cAVCPacketType = 0x00;
-        write(cAVCPacketType);
+        videoHeader.addByte(cAVCPacketType);
 
-        writeU3(0x00);
+        videoHeader.add3Bytes(0x00);
 
-        writeByte(0x01);
-        writeByte(SPS.seek(5).nextByte());
-        writeByte(SPS.seek(6).nextByte());
-        writeByte(SPS.seek(7).nextByte());
-        writeByte(0xff);
-        writeByte(0xe1);
+        videoHeader.addByte((byte)0x01);
 
-        writeU2(SPSSize - 4);
-        writeBytes(SPS.seek(4).nextBytes());
-        writeByte(0x01);
+        videoHeader.addByte(SPS.seek(5).nextByte());
+        videoHeader.addByte(SPS.seek(6).nextByte());
+        videoHeader.addByte(SPS.seek(7).nextByte());
+        videoHeader.addByte((byte)0xff);
+        videoHeader.addByte((byte)0xe1);
 
-        writeU2(PPSSize - 4);
-        writeBytes(PPS.seek(4).nextBytes());
+        videoHeader.addShort((short)(SPSSize - 4));
+        videoHeader.addBytes(SPS.seek(4).nextBytes());
+        videoHeader.addByte((byte)0x01);
+
+        videoHeader.addShort((short)(PPSSize - 4));
+        videoHeader.addBytes(PPS.seek(4).nextBytes());
 
         prevTagSize = 11 + nDataSize;
+        videoHeader.addInt(prevTagSize);
     }
 
-    void writeH264Frame(byte[] nalu, int nTimeStamp) throws IOException
+    void writeH264Frame(byte[] nalu, int nTimeStamp)
     {
         int nNaluType = nalu[4] & 0x1f;
         if (nNaluType == 7 || nNaluType == 8) return;
-
-        writeU4(prevTagSize);
 
         writeByte(0x09);
 
@@ -149,57 +177,27 @@ public final class FlvEncoder
         writeU4(nalu.length - 4);
         writeBytes(nalu, 4, nalu.length - 4);
 
-        flush();
-
         prevTagSize = 11 + nDataSize;
-    }
 
-    void writeH264EndOfSeq() throws IOException
-    {
         writeU4(prevTagSize);
-
-        writeByte(0x09);
-        int nDataSize = 1 + 1 + 3;
-        writeU3(nDataSize);
-
-        writeU3(videoTimeStamp);
-        writeByte(videoTimeStamp >> 24);
-
-        writeU3(streamID);
-        writeByte(0x27);
-        writeByte(0x02);
-        writeU3(0x00);
-
-        flush();
     }
 
-    public void flush() throws IOException
+    void write(byte u)
     {
-        output.flush();
+        videoFrame.write(u);
     }
 
-    public void close() throws IOException
+    void writeBytes(byte[] data)
     {
-        if (haveVideo) writeH264EndOfSeq();
-        output.close();
+        videoFrame.write(data, 0, data.length);
     }
 
-    void write(byte u) throws IOException
+    void writeBytes(byte[] data, int offset, int len)
     {
-        output.write(u);
+        videoFrame.write(data, offset, len);
     }
 
-    void writeBytes(byte[] data) throws IOException
-    {
-        output.write(data);
-    }
-
-    void writeBytes(byte[] data, int offset, int len) throws IOException
-    {
-        output.write(data, offset, len);
-    }
-
-    void writeU4(int i) throws IOException
+    void writeU4(int i)
     {
         write((byte)((i >> 24) & 0xff));
         write((byte)((i >> 16) & 0xff));
@@ -207,20 +205,20 @@ public final class FlvEncoder
         write((byte)((i >>  0) & 0xff));
     }
 
-    void writeU3(int i) throws IOException
+    void writeU3(int i)
     {
         write((byte)((i >> 16) & 0xff));
         write((byte)((i >>  8) & 0xff));
         write((byte)((i >>  0) & 0xff));
     }
 
-    void writeU2(int i) throws IOException
+    void writeU2(int i)
     {
         write((byte)((i >>  8) & 0xff));
         write((byte)((i >>  0) & 0xff));
     }
 
-    void writeByte(int i) throws IOException
+    void writeByte(int i)
     {
         write((byte)(i & 0xff));
     }

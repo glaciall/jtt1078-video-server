@@ -5,14 +5,8 @@ package cn.org.hentai.jtt1078.entity;
  */
 public class Video extends Media
 {
-    public static enum FlvType { Header, Description, Tag };
-
-    public boolean isKeyFrame;
-    public FlvType flvType;
-    public Video(long sequence, FlvType flvType, byte[] data)
+    public Video(long sequence, MediaEncoding.Encoding encoding, byte[] data)
     {
-        super(sequence, Media.Type.video, 0, data);
-        this.flvType = flvType;
-        this.isKeyFrame = ((data[11] >> 4) & 0x0f) == 1;
+        super(sequence, encoding, data);
     }
 }
