@@ -107,7 +107,7 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         String tag = getSession().get("tag");
         if (tag != null)
         {
-            logger.info("release netty channel: {}", tag);
+            logger.info("close netty channel: {}", tag);
             PublishManager.getInstance().close(tag);
         }
     }

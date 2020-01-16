@@ -5,6 +5,8 @@ import cn.org.hentai.jtt1078.util.FLVUtils;
 import cn.org.hentai.jtt1078.util.HttpChunk;
 import io.netty.channel.ChannelHandlerContext;
 
+import java.io.FileOutputStream;
+
 /**
  * Created by matrixy on 2020/1/13.
  */
@@ -14,9 +16,24 @@ public class VideoSubscriber extends Subscriber
     private long lastFrameTimeOffset = 0;
     private boolean headerSend = false;
 
+    FileOutputStream fos = null;
+
     public VideoSubscriber(String tag, ChannelHandlerContext ctx)
     {
         super(tag, ctx);
+    }
+
+    private void write(byte[] data)
+    {
+        try
+        {
+            // if (fos == null) fos = new FileOutputStream("d:\\fuck11111.flv");
+            // fos.write(data);
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
     }
 
     @Override
@@ -30,6 +47,9 @@ public class VideoSubscriber extends Subscriber
             enqueue(HttpChunk.make(flvEncoder.getHeader().getBytes()));
             enqueue(HttpChunk.make(flvEncoder.getVideoHeader().getBytes()));
 
+            write(flvEncoder.getHeader().getBytes());
+            write(flvEncoder.getVideoHeader().getBytes());
+
             // 如果第一次发送碰到的不是I祯，那就把上一个缓存的I祯发下去
             if ((data[4] & 0x1f) != 0x05)
             {
@@ -37,7 +57,7 @@ public class VideoSubscriber extends Subscriber
                 if (iFrame != null)
                 {
                     FLVUtils.resetTimestamp(iFrame, timestamp);
-                    // enqueue(HttpChunk.make(iFrame));
+                    enqueue(HttpChunk.make(iFrame));
                 }
             }
 
@@ -50,6 +70,8 @@ public class VideoSubscriber extends Subscriber
         FLVUtils.resetTimestamp(data, timestamp);
         timestamp += (int)(timeoffset - lastFrameTimeOffset);
         lastFrameTimeOffset = timeoffset;
+
+        write(data);
 
         enqueue(HttpChunk.make(data));
     }

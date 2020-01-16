@@ -24,6 +24,7 @@ public class Channel
     LinkedList<Subscriber> audioSubscribers;
 
     String tag;
+    boolean publishing;
     ByteHolder buffer;
     AudioCodec audioCodec;
     FlvEncoder flvEncoder;
@@ -35,6 +36,11 @@ public class Channel
         this.audioSubscribers = new LinkedList<Subscriber>();
         this.flvEncoder = new FlvEncoder(true, false);
         this.buffer = new ByteHolder(409600);
+    }
+
+    public boolean isPublishing()
+    {
+        return publishing;
     }
 
     public Subscriber subscribeVideo(ChannelHandlerContext ctx)
@@ -57,6 +63,7 @@ public class Channel
 
     public void writeAudio(long sequence, long timeoffset, int payloadType, byte[] raw)
     {
+        this.publishing = true;
         if (this.audioCodec == null) this.audioCodec = AudioCodec.getCodec(payloadType);
         byte[] pcmData = this.audioCodec.toPCM(raw);
         broadcastAudio(timeoffset, pcmData);
@@ -64,6 +71,7 @@ public class Channel
 
     public void writeVideo(long sequence, long timeoffset, int payloadType, byte[] h264)
     {
+        this.publishing = true;
         this.buffer.write(h264);
         while (true)
         {
@@ -71,11 +79,10 @@ public class Channel
             if (nalu == null) break;
 
             byte[] flvTag = this.flvEncoder.write(nalu, 0);
+            if (flvTag == null) continue;
 
             // 广播给所有的观众
             broadcastVideo(timeoffset, flvTag);
-
-            // logger.info("broadcast: {}", Long.toHexString(hashCode() & 0xffffffffL));
         }
     }
 

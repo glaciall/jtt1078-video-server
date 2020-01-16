@@ -24,6 +24,11 @@ public final class PublishManager
     public Subscriber subscribe(String tag, Media.Type type, ChannelHandlerContext ctx)
     {
         Channel chl = channels.get(tag);
+        if (chl == null)
+        {
+            chl = new Channel(tag);
+            channels.put(tag, chl);
+        }
         Subscriber subscriber = null;
         if (type.equals(Media.Type.Audio)) subscriber = chl.subscribeAudio(ctx);
         else if (type.equals(Media.Type.Video)) subscriber = chl.subscribeVideo(ctx);
@@ -54,8 +59,7 @@ public final class PublishManager
             chl = new Channel(tag);
             channels.put(tag, chl);
         }
-        else throw new RuntimeException("channel already publishing");
-
+        if (chl.isPublishing()) throw new RuntimeException("channel already publishing");
         return chl;
     }
 

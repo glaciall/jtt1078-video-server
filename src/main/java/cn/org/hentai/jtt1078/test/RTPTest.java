@@ -17,7 +17,7 @@ public class RTPTest
 {
     public static void main(String[] args) throws Exception
     {
-        InputStream fis = new FileInputStream("e:\\test\\streamax.bin");
+        InputStream fis = new FileInputStream("d:\\streamax-20191209.bin");
         int len = -1;
         byte[] block = new byte[1024];
         Jtt1078Decoder decoder = new Jtt1078Decoder();
@@ -26,11 +26,11 @@ public class RTPTest
         ByteHolder buffer = new ByteHolder(1096 * 100);
         String profile = null;
 
-        FileOutputStream fos = new FileOutputStream("e:\\test\\fuckfuckfuck.flv");
-        FlvEncoder flvEncoder = null; // new FlvEncoder();
-        // flvEncoder.open(fos, true, false);
+        FileOutputStream fos = new FileOutputStream("d:\\flvanalyser.flv");
+        FlvEncoder flvEncoder = new FlvEncoder(true, false);
 
         int timestamp = 0;
+        boolean xxoo = false;
 
         while ((len = fis.read(block)) > -1)
         {
@@ -68,12 +68,23 @@ public class RTPTest
 
                             if (nalu.length < 4) continue;
 
-                            flvEncoder.write(nalu, timestamp += 67);
+                            byte[] data = flvEncoder.write(nalu, timestamp += 67);
+
+                            if (xxoo == false && flvEncoder.videoReady())
+                            {
+                                fos.write(flvEncoder.getHeader().getBytes());
+                                fos.write(flvEncoder.getVideoHeader().getBytes());
+                                xxoo = true;
+                            }
+
+                            if (data != null) fos.write(data);
                         }
                     }
                 }
             }
         }
+
+        fos.close();
 
         // flvEncoder.close();
     }

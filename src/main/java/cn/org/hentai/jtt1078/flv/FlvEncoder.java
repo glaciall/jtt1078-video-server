@@ -70,6 +70,14 @@ public final class FlvEncoder
         int naluType = nalu[4] & 0x1f;
         // skip SEI
         if (naluType == 0x06) return null;
+        if (naluType == 0x01
+                || naluType == 0x02
+                || naluType == 0x03
+                || naluType == 0x04
+                || naluType == 0x05
+                || naluType == 0x07
+                || naluType == 0x08) ; else return null;
+
         if (SPS == null && naluType == 0x07)
         {
             SPS = Packet.create(nalu);
