@@ -23,19 +23,6 @@ public class VideoSubscriber extends Subscriber
         super(tag, ctx);
     }
 
-    private void write(byte[] data)
-    {
-        try
-        {
-            // if (fos == null) fos = new FileOutputStream("d:\\fuck11111.flv");
-            // fos.write(data);
-        }
-        catch(Exception ex)
-        {
-            ex.printStackTrace();
-        }
-    }
-
     @Override
     public void onData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
     {
@@ -46,9 +33,6 @@ public class VideoSubscriber extends Subscriber
         {
             enqueue(HttpChunk.make(flvEncoder.getHeader().getBytes()));
             enqueue(HttpChunk.make(flvEncoder.getVideoHeader().getBytes()));
-
-            write(flvEncoder.getHeader().getBytes());
-            write(flvEncoder.getVideoHeader().getBytes());
 
             // 如果第一次发送碰到的不是I祯，那就把上一个缓存的I祯发下去
             if ((data[4] & 0x1f) != 0x05)
@@ -70,8 +54,6 @@ public class VideoSubscriber extends Subscriber
         FLVUtils.resetTimestamp(data, timestamp);
         timestamp += (int)(timeoffset - lastFrameTimeOffset);
         lastFrameTimeOffset = timeoffset;
-
-        write(data);
 
         enqueue(HttpChunk.make(data));
     }

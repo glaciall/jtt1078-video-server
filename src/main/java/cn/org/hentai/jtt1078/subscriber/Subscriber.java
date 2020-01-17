@@ -66,7 +66,7 @@ public abstract class Subscriber extends Thread
                     }
                     data = messages.removeFirst();
                 }
-                send(data);
+                send(data).await();
             }
             catch(Exception ex)
             {

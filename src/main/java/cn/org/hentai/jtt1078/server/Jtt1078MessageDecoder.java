@@ -16,7 +16,7 @@ import java.util.List;
 public class Jtt1078MessageDecoder extends ByteToMessageDecoder
 {
     static Logger logger = LoggerFactory.getLogger(Jtt1078MessageDecoder.class);
-    byte[] block = new byte[512];
+    byte[] block = new byte[4096];
     Jtt1078Decoder decoder = new Jtt1078Decoder();
 
     @Override

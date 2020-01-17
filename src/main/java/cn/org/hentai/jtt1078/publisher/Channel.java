@@ -6,10 +6,13 @@ import cn.org.hentai.jtt1078.util.ByteHolder;
 import cn.org.hentai.jtt1078.subscriber.AudioSubscriber;
 import cn.org.hentai.jtt1078.subscriber.Subscriber;
 import cn.org.hentai.jtt1078.subscriber.VideoSubscriber;
+import cn.org.hentai.jtt1078.util.ByteUtils;
+import cn.org.hentai.jtt1078.util.FLVUtils;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileOutputStream;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -77,6 +80,7 @@ public class Channel
         {
             byte[] nalu = readNalu();
             if (nalu == null) break;
+            if (nalu.length < 4) continue;
 
             byte[] flvTag = this.flvEncoder.write(nalu, 0);
             if (flvTag == null) continue;
@@ -155,15 +159,6 @@ public class Channel
                 if (i == 0) continue;
                 byte[] nalu = new byte[i];
                 buffer.sliceInto(nalu, i);
-                i = 0;
-
-                if (nalu.length < 4)
-                {
-                    i = 0;
-                    buffer.slice(nalu.length);
-                    continue;
-                }
-
                 return nalu;
             }
         }

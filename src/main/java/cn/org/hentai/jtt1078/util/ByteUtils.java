@@ -59,7 +59,7 @@ public final class ByteUtils
     public static String toString(byte[] buff, int length)
     {
         StringBuffer sb = new StringBuffer(length * 2);
-        for (int i = 0; i < length; i++)
+        for (int i = 0; i < buff.length && i < length; i++)
         {
             if ((buff[i] & 0xff) < 0x10) sb.append('0');
             sb.append(Integer.toHexString(buff[i] & 0xff).toUpperCase());
