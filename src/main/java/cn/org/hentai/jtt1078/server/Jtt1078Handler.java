@@ -40,7 +40,7 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
             session.set("tag", tag);
 
             Channel chl = PublishManager.getInstance().open(tag);
-            logger.info("channel opened: {} -> {}-{}", Long.toHexString(chl.hashCode() & 0xffffffffL), sim, channel);
+            logger.info("start publishing: {} -> {}-{}", Long.toHexString(chl.hashCode() & 0xffffffffL), sim, channel);
         }
 
         Integer sequence = session.get("video-sequence");
