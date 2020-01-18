@@ -15,20 +15,22 @@
 基于JT/T 1078协议实现的视频转播服务器，当车机服务器端主动下发**音视频实时传输控制**消息（0x9101）后，车载终端连接到此服务器后，发送指定摄像头所采集的视频流，此项目服务器完成音视频数据接收并转码，完成转播的流程，提供各平台的播放支撑。
 
 ## 分支说明
-本项目目前有3个分支，都处于完善当中，各分支的情况区别如下：
+本项目目前有4个分支，都处于完善当中，各分支的情况区别如下：
 
-|分支|说明|备注|
-|---|---|---|
-|master|通过ffmpeg子进程实现的纯视频RTMP推流方案|平台不限|
-|fifo|通过ffmpeg子进程实现的音视频合并推流RTMP方案（此方案不稳定，已放弃）|需要linux mkfifo支持|
-|multimedia|通过ffmpeg完成h264到flv封装，并直接提供HTTP-FLV支持的视频方案，音视频通过chunked分块传输到前端直接播放|平台不限|
-|flv|直接使用java完成h264到flv的封装，并直接提供HTTP-FLV支持的视频方案，音频通过chunked分块传输到前端进行播放|平台不限|
+|分支|说明|跨平台？|优势|劣势|
+|---|---|---|---|---|
+|master|通过ffmpeg子进程实现的纯视频RTMP推流方案|平台不限|简单，首屏时间最长|不支持音频，低并发|
+|fifo|通过ffmpeg子进程实现的音视频合并推流RTMP方案|需要linux mkfifo支持|不稳定，需要掌握ffmpeg|可以支持各种视频编码，低并发|
+|multimedia|通过ffmpeg完成h264到flv封装，并直接提供HTTP-FLV支持的视频方案，音视频通过chunked分块传输到前端直接播放|平台不限|-|需要ffmpeg支持，低并发|
+|flv|直接使用java完成h264到flv的封装，并直接提供HTTP-FLV支持的视频方案，音频通过chunked分块传输到前端进行播放|平台不限|首屏时间最短|不支持其它形式的输出|
+
+使用了ffmpeg子进程模式的，都可以想办法同时输出多个目标，比如到RTMP，RTMP还可以转为HLS等。
 
 ### 项目说明
 本项目接收来自于车载终端发过来的音视频数据，视频直接做flv的封装，音频完成G.711A、G.711U、ADPCMA到PCM的转码，项目内集成的http服务器直接提供chunked分块传输来提供FLV或WAV数据至前端网页播放。
 
 #### 视频编码支持
-目前几乎所有的终端视频，默认的视频编码都是h264，打包成flv也是非常简单的（以后有时间了自己来做封装），有个别厂家使用avs，但是我没有碰到过。本项目目前也只支持h264编码的视频。
+目前几乎所有的终端视频，默认的视频编码都是h264，打包成flv也是非常简单的，有个别厂家使用avs，但是我没有碰到过。本项目目前也只支持h264编码的视频。
 
 #### 音频编码支持
 |音频编码|支持|备注|
@@ -67,69 +69,85 @@ public abstract class AudioCodec
 6. 点击网页上的**play video**或**play audio**按钮，开始播放视频或音频
 
 ### 测试环境
-我在我自己的VPS上搭建了一个1078音视频环境，完全使用了**multimedia**分支上的代码来创建，各位可以让终端将音视频发送到此服务器或是使用**netcat**等网络工具发送模拟数据来仿真终端，来体验音视频的效果。下面我们说一下通过**netcat**来模拟终端的方法：
+我在我自己的VPS上搭建了一个1078音视频环境，完全使用了**flv**分支上的代码来创建，各位可以让终端将音视频发送到此服务器或是使用**netcat**等网络工具发送模拟数据来仿真终端，来体验音视频的效果。下面我们说一下通过**netcat**来模拟终端的方法：
 
 |标题|说明|
 |---|---|
 |1078音视频服务器|103.213.245.126:10780|
 |实时音视频播放页面|http://1078.hentai.org.cn/test/multimedia#SIM-CHANNEL|
 
-1. 首先，本项目的**/src/main/resources/**下的**tcpdump.bin**即为我抓包存下来的终端音视频数据文件，通过`cat tcpdump.bin | pv -L 30k -q | nc 103.213.245.126 10780`即可以每秒30kBPS的速度，向服务器端且持续的发送数据。
+1. 首先，本项目的**/src/main/resources/**下的**tcpdump.bin**即为我抓包存下来的终端音视频数据文件，通过`cat tcpdump.bin | pv -L 30k -q | nc 103.213.245.126 10780`即可以每秒30kBPS的速度，向服务器端持续的发送数据。
 2. 在浏览器里打开**http://1078.hentai.org.cn/test/multimedia#SIM-CHANNEL** （注意替换掉后面的SIM和CHANNEL，即终端的SIM卡号，不足12位前面补0，CHANNEL即为通道号），然后点击网页上的**play video**或**play audio**即可。
 
 ### 项目文件说明
 ```
-├── doc（一些文档）
+
+├── doc
 ├── LICENSE
 ├── pom.xml
 ├── README.md
 ├── src
-│   ├── main
-│   │   ├── java
-│   │   │   └── cn
-│   │   │       └── org
-│   │   │           └── hentai
-│   │   │               └── jtt1078
-│   │   │                   ├── app
-│   │   │                   │   └── VideoServerApp.java（主入口程序）
-│   │   │                   ├── codec
-│   │   │                   │   ├── ADPCMCodec.java（ADPCMA编码解码实现）
-│   │   │                   │   ├── AudioCodec.java（音频编码抽象类）
-│   │   │                   │   ├── G711Codec.java（G.711A编码解码实现）
-│   │   │                   │   ├── G711UCodec.java（G.711U编码解码实现）
-│   │   │                   │   └── RawDataCopyCodec.java（无意义的音频转码实现）
-│   │   │                   ├── entity
-│   │   │                   │   └── 几个实体类定义
-│   │   │                   ├── http
-│   │   │                   │   ├── GeneralResponseWriter.java（直接字节数组数据输出）
-│   │   │                   │   └── NettyHttpServerHandler.java（基于netty的HTTP服务处理器）
-│   │   │                   ├── publisher
-│   │   │                   │   └── PublishManager.java（音视频数据片段发布与订阅）
-│   │   │                   ├── server
-│   │   │                   │   ├── Jtt1078Decoder.java（1078协议RTP消息包解码器，含粘包处理）
-│   │   │                   │   ├── Jtt1078Handler.java（1078协议消息处理器）
-│   │   │                   │   ├── Jtt1078MessageDecoder.java（1078协议RTP消息包解码器）
-│   │   │                   │   ├── Session.java（1078连接会话数据容器）
-│   │   │                   │   └── SessionManager.java（会话管理器，用于分配会话id）
-│   │   │                   ├── subscriber
-│   │   │                   │   ├── AudioSubscriber.java（音频数据订阅者）
-│   │   │                   │   ├── Subscriber.java（音视频数据订阅者基类实现）
-│   │   │                   │   └── VideoSubscriber.java（视频数据订阅者）
-│   │   │                   ├── test
-│   │   │                   │   └── VideoPushTest.java（终端数据发送模拟程序）
-│   │   │                   ├── util
-│   │   │                   │   └── 工具方法类
-│   │   │                   └── video
-│   │   │                       ├── FFMpegManager.java（ffmpeg子进程管理器）
-│   │   │                       ├── StdoutCleaner.java（ffmpeg子进程的stderr输出缓冲数据清理）
-│   │   │                       ├── VideoFeeder.java（ffmpeg子进程的视频数据提供者）
-│   │   │                       └── VideoPublisher.java（ffmpeg子进程的输出处理与FLV发布）
-│   │   └── resources
-│   │       ├── app.properties（配置文件）
-│   │       ├── audio.html（音频播放测试页面）
-│   │       ├── log4j.properties（log4j配置）
-│   │       ├── tcpdump.bin（锐明终端模拟数据：视频H264、音频含海思头的ADPCMA）
-│   │       └── multimedia.html（音视频测试页面）
+│   └── main
+│       ├── java
+│       │   └── cn
+│       │       └── org
+│       │           └── hentai
+│       │               └── jtt1078
+│       │                   ├── app
+│       │                   │   └── VideoServerApp.java（主入口程序）
+│       │                   ├── codec
+│       │                   │   ├── ADPCMCodec.java（ADPCM编解码器）
+│       │                   │   ├── AudioCodec.java（音频编解码器抽象类）
+│       │                   │   ├── G711Codec.java（G711A编解码器）
+│       │                   │   ├── G711UCodec.java（G711U编解码器）
+│       │                   │   └── RawDataCopyCodec.java
+│       │                   ├── entity
+│       │                   │   ├── Audio.java
+│       │                   │   ├── MediaEncoding.java
+│       │                   │   ├── Media.java
+│       │                   │   └── Video.java
+│       │                   ├── flv
+│       │                   │   └── FlvEncoder.java（H264到FLV封装编码器）
+│       │                   ├── http（内置HTTP服务，提供HTTP-CHUNKED传输支持）
+│       │                   │   ├── GeneralResponseWriter.java
+│       │                   │   └── NettyHttpServerHandler.java
+│       │                   ├── publisher
+│       │                   │   ├── Channel.java（一个通道一个Channel实例，Subscriber订阅Channel上的音频或视频）
+│       │                   │   └── PublishManager.java（管理Channel和Subscriber）
+│       │                   ├── server（负责完成1078 RTP消息包的接收和解码）
+│       │                   │   ├── Jtt1078Decoder.java
+│       │                   │   ├── Jtt1078Handler.java
+│       │                   │   ├── Jtt1078MessageDecoder.java
+│       │                   │   └── Session.java
+│       │                   ├── subscriber
+│       │                   │   ├── AudioSubscriber.java（音频数据封装与订阅）
+│       │                   │   ├── Subscriber.java
+│       │                   │   └── VideoSubscriber.java（视频数据封装与订阅）
+│       │                   ├── test（一些测试代码）
+│       │                   │   ├── AudioTest.java
+│       │                   │   ├── ChannelTest.java
+│       │                   │   ├── G711ATest.java
+│       │                   │   ├── RTPTest.java
+│       │                   │   ├── VideoPushTest.java（使用数据文件模拟终端发送音视频数据）
+│       │                   │   ├── VideoServer.java
+│       │                   │   └── WAVTest.java
+│       │                   └── util
+│       │                       ├── ByteHolder.java
+│       │                       ├── ByteUtils.java
+│       │                       ├── Configs.java
+│       │                       ├── FileUtils.java
+│       │                       ├── FLVUtils.java
+│       │                       ├── HttpChunk.java
+│       │                       ├── Packet.java
+│       │                       └── WAVUtils.java
+│       └── resources
+│           ├── app.properties（主配置文件）
+│           ├── audio.html
+│           ├── log4j.properties
+│           ├── multimedia.html（测试用音视频播放页面）
+│           ├── tcpdump.bin（测试用数据文件，音频ADPCM含海思头，视频H264）
+│           ├── test.html
+│           └── video.html
 └─────────────────────────────────────────────────────────────────────────────────────────────────
 ```
 
@@ -157,6 +175,7 @@ public abstract class AudioCodec
 * minigps-基站定位服务
 * 慢慢
 * power LXC
+* 奎杜
 
 ### 交流讨论
 QQ群：808432702，加入我们，群里有热心的同道中人、相关资料、测试数据、代码以及各种方案的先行者等着你。
