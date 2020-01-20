@@ -97,8 +97,8 @@ public class G711Codec extends AudioCodec
         for (int i = 0, k = 0; i < g711data.length; i++)
         {
             short v = alaw2linear(g711data[i]);
-            pcmdata[k++] = (byte)((v >> 8) & 0xff);
             pcmdata[k++] = (byte) (v & 0xff);
+            pcmdata[k++] = (byte)((v >> 8) & 0xff);
         }
         return pcmdata;
     }
