@@ -214,6 +214,11 @@ function StreamAudio(url)
 </script>
 <script type="text/javascript">
     var TAG = '013800138999-2';
+    if (location.hash)
+    {
+        var hash = location.hash.substring(1);
+        if (hash.match(/^\d{12}-\d{1,2}$/gi)) TAG = hash;
+    }
     function playVideo()
     {
         var videoPlayer = new FLVPlayer({
