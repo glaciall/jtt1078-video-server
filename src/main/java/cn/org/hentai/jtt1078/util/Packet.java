@@ -221,6 +221,17 @@ public class Packet
         return ch1 + "" + ch2;
     }
 
+    public Packet addBCD(String num)
+    {
+        for (int i = 0, l = num.length(); i < l; i+=2)
+        {
+            char a = (char)(num.charAt(i) - '0');
+            char b = (char)(num.charAt(i + 1) - '0');
+            addByte((byte)(a << 4 | b));
+        }
+        return this;
+    }
+
     public long nextLong()
     {
         return ((long) this.data[offset++] & 0xff) << 56 | ((long) this.data[offset++] & 0xff) << 48 | ((long) this.data[offset++] & 0xff) << 40 | ((long) this.data[offset++] & 0xff) << 32 | ((long) this.data[offset++] & 0xff) << 24 | ((long) this.data[offset++] & 0xff) << 16 | ((long) this.data[offset++] & 0xff) << 8 | ((long) this.data[offset++] & 0xff);
@@ -277,6 +288,6 @@ public class Packet
 
     public static void main(String[] args) throws Exception
     {
-        // ...
+        ByteUtils.dump(Packet.create(32).addBCD("013800138000").getBytes());
     }
 }
