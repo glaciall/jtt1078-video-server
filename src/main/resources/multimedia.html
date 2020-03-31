@@ -35,6 +35,9 @@ function FLVPlayer(opts)
     this.onPauseEvtListener = null;
     this.onStopEvtListener = null;
 
+    this.autoFastForward = opts.autoFastForward;
+    this.autoFastForwardInterval = null;
+
     this.play = function()
     {
         if (this.player) return;
@@ -79,6 +82,15 @@ function FLVPlayer(opts)
         self.player.attachMediaElement(self.videoElement);
         self.player.load();
         self.player.play();
+
+        if (this.autoFastForward) this.autoFastForwardInterval = setInterval(function()
+        {
+            if (self.videoElement.buffered.length > 0 && self.videoElement.buffered.end(0) - self.videoElement.currentTime > 2)
+            {
+                console.log(self.videoElement.buffered.end(0) + "-" + self.videoElement.currentTime);
+                self.videoElement.currentTime = self.videoElement.buffered.end(0) - 1;
+            }
+        }, 1000);
     };
 
     this.fullscreen = function()
@@ -95,6 +107,7 @@ function FLVPlayer(opts)
     this.destroy = function()
     {
         this.player.destroy();
+        clearInterval(this.autoFastForwardInterval);
     }
 }
 
@@ -224,6 +237,8 @@ function StreamAudio(url)
         var videoPlayer = new FLVPlayer({
             container : $('#xxoo'),
             url : '/video/' + TAG,
+            // 自动快进追祯，但是可能会导致画面停顿
+            autoFastForward : false
         });
         videoPlayer.play();
     }
