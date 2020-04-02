@@ -16,7 +16,8 @@ public class VideoPushTest
         OutputStream os = conn.getOutputStream();
 
         // InputStream fis = new FileInputStream("e:\\workspace\\enc_dec_audio\\streamax.bin");
-        InputStream fis = new FileInputStream("e:\\test\\streaming.hex");
+        // InputStream fis = new FileInputStream("e:\\test\\streaming.hex");
+        InputStream fis = VideoPushTest.class.getResourceAsStream("/tcpdump.bin");
         int len = -1;
         byte[] block = new byte[512];
         while ((len = fis.read(block)) > -1)
