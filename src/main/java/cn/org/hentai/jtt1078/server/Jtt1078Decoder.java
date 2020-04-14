@@ -43,7 +43,6 @@ public class Jtt1078Decoder
         int packetLength = bodyLength + lengthOffset + 2;
 
         if (this.buffer.size() < packetLength) return null;
-        Packet packet = Packet.create(packetLength);
         byte[] block = new byte[packetLength];
         this.buffer.sliceInto(block, packetLength);
         return Packet.create(block);
