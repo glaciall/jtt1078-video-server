@@ -8,6 +8,7 @@
     <li><a href="#测试环境">测试环境</a></li>
     <li><a href="#TODO">TODO</a></li>
     <li><a href="#致谢">致谢</a></li>
+    <li><a href="#推荐群友项目">推荐群友项目</a></li>
     <li><a href="#交流讨论">交流讨论</a></li>
 </ol>
 
@@ -30,6 +31,8 @@
 
 使用了ffmpeg子进程模式的，都可以想办法同时输出多个目标，比如到RTMP，RTMP还可以转为HLS等。
 
+> 有其它语言的开发者，可以参考我的“[JTT/1078音视频传输协议开发指南](https://www.hentai.org.cn/article?id=8)”，我所知道的官方文档里的错误或是缺陷以及坑，我全部写了下来，希望对你有帮助。
+
 ### 项目说明
 本项目接收来自于车载终端发过来的音视频数据，视频直接做flv的封装，音频完成G.711A、G.711U、ADPCMA到PCM的转码，项目内集成的http服务器直接提供chunked分块传输来提供FLV或WAV数据至前端网页播放。
 
@@ -39,9 +42,9 @@
 #### 音频编码支持
 |音频编码|支持|备注|
 |---|---|---|
-|G.711A|Y|未测试|
-|G.711U|Y|未测试|
-|ADPCMA|Y|完美支持，包括含海思头的（锐明的几乎都有）|
+|G.711A|Y|支持|
+|G.711U|Y|支持|
+|ADPCMA|Y|支持，包括含海思头的（锐明的几乎都有）|
 |G.726|N|尚未实现|
 
 音频编码太多，也没那么多设备可以测试的，比较常见的就G.711A和ADPCMA这两种，G.726还没有发现哪款终端支持的，没条件测试。另外，音频播放是直接使用PCM到WAV封装的，完全没有压缩，通过BASE64编码后到前端，流量消耗很大，通常比视频还大，这里还需要另外找时间设计个压缩算法才行。
@@ -184,6 +187,12 @@ public abstract class AudioCodec
 * 慢慢
 * power LXC
 * 奎杜
+
+### 推荐群友项目
+|项目|URL|作者|说明|
+|---|---|---|---|
+|JTT1078Server|https://github.com/SuperChrisliu/JTT1078Server|[SuperChrisliu](https://github.com/SuperChrisliu)|Java，支持音视频以及语音对讲|
+|JT1078|https://github.com/yedajiang44/JT1078|SmallChi/[yedajiang44](https://github.com/yedajiang44)|C#，支持音视频，通过websocket传输flv到前端|
 
 ### 交流讨论
 QQ群：808432702，加入我们，群里有热心的同道中人、相关资料、测试数据、代码以及各种方案的先行者等着你。
