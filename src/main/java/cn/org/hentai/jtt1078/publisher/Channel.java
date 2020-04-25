@@ -16,9 +16,13 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.security.util.Length;
 
 import javax.sound.sampled.AudioFormat;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -42,6 +46,8 @@ public class Channel
     //需要缓冲一定量的样本数据才能转换
     private int audioBufSize = 1024 * 20;
     private FlvAudioTagEncoder audioEncoder = new FlvAudioTagEncoder();
+    private final File tmpFile ;
+    private FileOutputStream fileOutputStream ;
 
     public Channel(String tag)
     {
@@ -50,6 +56,10 @@ public class Channel
         this.audioSubscribers = new LinkedList<Subscriber>();
         this.flvEncoder = new FlvEncoder(true, true);
         this.buffer = new ByteHolder(409600);
+        this.tmpFile = new File(getClass().getClassLoader().getResource("").getFile() + File.separator + tag + "tmp.mp3");
+        if (tmpFile.exists()) {
+            tmpFile.delete();
+        }
     }
 
     public boolean isPublishing()
@@ -85,10 +95,13 @@ public class Channel
 
     public void writeA(long timestamp, int pt, byte[] data) {
         if (firstTimestamp == 0) firstTimestamp = timestamp;
-        if (audioContent.readableBytes() < audioBufSize) return;
         if (this.audioCodec == null) this.audioCodec = AudioCodec.getCodec(pt);
         byte[] pcmData = this.audioCodec.toPCM(data);
-        byte[] mp3Data = encodePcmToMp3(pcmData);
+        writeFile(pcmData);
+        audioContent.writeBytes(pcmData);
+        if (audioContent.readableBytes() < audioBufSize) return;
+        byte[] mp3Data = encodePcmToMp3(ByteBufUtils.readReadableBytes(audioContent));
+        audioContent.discardReadBytes();
         AudioTag audioTag = newMp3AudioTag(mp3Data, AudioTag.MP3, (byte) 0, (int) (timestamp - firstTimestamp));
         try {
             ByteBuf audioBuf = audioEncoder.encode(audioTag);
@@ -100,7 +113,18 @@ public class Channel
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
 
+    private void writeFile(byte[] mp3Data) {
+        try {
+            if (!tmpFile.exists()) {
+            tmpFile.createNewFile();
+            }
+            fileOutputStream = new FileOutputStream(tmpFile,true);
+            fileOutputStream.write(mp3Data);
+        } catch (IOException e) {
+            logger.warn("创建临时文件错误",e);
+        }
     }
 
     private AudioTag newMp3AudioTag(byte[] audioData, byte flvAudioType, byte rate, int offSetTimeStamp) {

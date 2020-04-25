@@ -12,26 +12,23 @@ import org.slf4j.LoggerFactory;
 public class FlvAudioTagEncoder {
     public static final Logger log = LoggerFactory.getLogger(FlvAudioTagEncoder.class);
 
-    public ByteBuf encode(FlvTag flvTag) throws Exception {
+    public ByteBuf encode(AudioTag audioTag) throws Exception {
         ByteBuf buffer = Unpooled.buffer();
-        if (flvTag == null) return buffer;
-//        buffer.writeInt(flvTag.getPreTagSize());
+        if (audioTag == null) return buffer;
+//        buffer.writeInt(audioTag.getPreTagSize());
         //----------------------tag header begin-------
         buffer.writeByte(8);
-        buffer.writeMedium(flvTag.getTagDataSize());
-        buffer.writeMedium(flvTag.getOffSetTimestamp() & 0xFFFFFF);
-        buffer.writeByte(flvTag.getOffSetTimestamp() >> 24);
-        buffer.writeMedium(flvTag.getStreamId());
+        buffer.writeMedium(audioTag.getTagDataSize());
+        buffer.writeMedium(audioTag.getOffSetTimestamp() & 0xFFFFFF);
+        buffer.writeByte(audioTag.getOffSetTimestamp() >> 24);
+        buffer.writeMedium(audioTag.getStreamId());
         //---------------------tag header length 11---------
         //---------------------tag header end----------------
-         if (flvTag instanceof AudioTag) {
-            AudioTag audioTag = (AudioTag) flvTag;
-            byte formatAndRateAndSize = (byte) (audioTag.getFormat() << 4 | audioTag.getRate() << 2 | audioTag.getSize() << 1 | audioTag.getType());
-            //-------------data begin-------
-            buffer.writeByte(formatAndRateAndSize);
-            buffer.writeBytes(audioTag.getData());
-            //-------------data end  -------
-        }
+        byte formatAndRateAndSize = (byte) (audioTag.getFormat() << 4 | audioTag.getRate() << 2 | audioTag.getSize() << 1 | audioTag.getType());
+        //-------------data begin-------
+        buffer.writeByte(formatAndRateAndSize);
+        buffer.writeBytes(audioTag.getData());
+        //-------------data end  -------
         buffer.writeInt(buffer.writerIndex());//应该等于11+tagDataSize
         return buffer;
     }
