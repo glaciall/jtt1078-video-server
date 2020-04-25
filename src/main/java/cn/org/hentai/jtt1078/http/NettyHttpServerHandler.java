@@ -13,8 +13,6 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 
 import java.io.File;
 import java.io.FileInputStream;

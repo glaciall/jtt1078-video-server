@@ -26,8 +26,6 @@ public class VideoSubscriber extends Subscriber
     @Override
     public void onData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
     {
-        if (lastFrameTimeOffset == 0) lastFrameTimeOffset = timeoffset;
-
         // 之前是不是已经发送过了？没有的话，需要补发FLV HEADER的。。。
         if (headerSend == false && flvEncoder.videoReady())
         {
@@ -40,7 +38,6 @@ public class VideoSubscriber extends Subscriber
                 byte[] iFrame = flvEncoder.getLastIFrame();
                 if (iFrame != null)
                 {
-                    FLVUtils.resetTimestamp(iFrame, timestamp);
                     enqueue(HttpChunk.make(iFrame));
                 }
             }
@@ -49,11 +46,6 @@ public class VideoSubscriber extends Subscriber
         }
 
         if (data == null) return;
-
-        // 修改时间戳
-        FLVUtils.resetTimestamp(data, timestamp);
-        timestamp += (int)(timeoffset - lastFrameTimeOffset);
-        lastFrameTimeOffset = timeoffset;
 
         enqueue(HttpChunk.make(data));
     }

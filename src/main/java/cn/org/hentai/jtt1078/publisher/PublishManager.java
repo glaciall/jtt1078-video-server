@@ -45,6 +45,11 @@ public final class PublishManager
         if (chl != null) chl.writeAudio(sequence, timestamp, payloadType, data);
     }
 
+    public void publishA(String tag, long timestamp, int pt, byte[] data) {
+        Channel channel = channels.get(tag);
+        if(channel!=null) channel.writeA(timestamp,pt,data);
+    }
+
     public void publishVideo(String tag, int sequence, long timestamp, int payloadType, byte[] data)
     {
         Channel chl = channels.get(tag);
@@ -75,9 +80,9 @@ public final class PublishManager
         if (chl != null) chl.unsubscribe(watcherId);
         logger.info("unsubscribe: {} - {}", tag, watcherId);
     }
-
     static final PublishManager instance = new PublishManager();
     public static void init() { }
+
     public static PublishManager getInstance()
     {
         return instance;
