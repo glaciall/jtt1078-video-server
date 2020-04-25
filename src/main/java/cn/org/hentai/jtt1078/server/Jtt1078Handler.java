@@ -70,7 +70,9 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         else if (dataType == 0x03)
         {
             long timestamp = packet.seek(16).nextLong();
-            PublishManager.getInstance().publishAudio(tag, sequence, timestamp, pt, packet.seek(lengthOffset + 2).nextBytes());
+            byte[] data = packet.seek(lengthOffset + 2).nextBytes();
+            PublishManager.getInstance().publishA(tag, timestamp, pt, data);
+            PublishManager.getInstance().publishAudio(tag, sequence, timestamp, pt, data);
         }
     }
 

@@ -49,6 +49,12 @@
             <version>2.4</version>
             <classifier>jdk15</classifier>
         </dependency>
+        <!--pcm转mp3-->
+        <dependency>
+            <groupId>de.sciss</groupId>
+            <artifactId>jump3r</artifactId>
+            <version>1.0.5</version>
+        </dependency>
     </dependencies>
 
     <build>
