@@ -19,6 +19,8 @@
 ## jtt1078-video-server
 基于JT/T 1078协议实现的视频转播服务器，当车机服务器端主动下发**音视频实时传输控制**消息（0x9101）后，车载终端连接到此服务器后，发送指定摄像头所采集的视频流，此项目服务器完成音视频数据接收并转码，完成转播的流程，提供各平台的播放支撑。
 
+> 非常感谢**孤峰赏月/hx（[github/jelycom](https://github.com/jelycom)）**提供的mp3音频支持。
+
 ## 分支说明
 本项目目前有4个分支，都处于完善当中，各分支的情况区别如下：
 
@@ -181,12 +183,13 @@ public abstract class AudioCodec
 * 不岸不名
 * 故事~
 * 小黄瓜要吃饭
-* yedajiang44.com
+* yedajiang44.com（[github.com/yedajiang44](https://github.com/yedajiang44)）
 * 幸福一定强
 * minigps-基站定位服务
 * 慢慢
 * power LXC
 * 奎杜
+* 孤峰赏月/hx（[github/jelycom](https://github.com/jelycom)）
 
 ### 推荐群友项目
 |项目|URL|作者|说明|
