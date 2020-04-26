@@ -5,18 +5,17 @@ import cn.org.hentai.jtt1078.util.FLVUtils;
 import cn.org.hentai.jtt1078.util.HttpChunk;
 import io.netty.channel.ChannelHandlerContext;
 
-import java.io.FileOutputStream;
-
 /**
  * Created by matrixy on 2020/1/13.
  */
 public class VideoSubscriber extends Subscriber
 {
-    private int timestamp = 0;
-    private long lastFrameTimeOffset = 0;
-    private boolean headerSend = false;
-
-    FileOutputStream fos = null;
+    private long videoTimestamp = 0;
+    private long audioTimestamp = 0;
+    private long lastVideoFrameTimeOffset = 0;
+    private long lastAudioFrameTimeOffset = 0;
+    private boolean videoHeaderSent = false;
+    private boolean audioHeaderSent = false;
 
     public VideoSubscriber(String tag, ChannelHandlerContext ctx)
     {
@@ -24,10 +23,12 @@ public class VideoSubscriber extends Subscriber
     }
 
     @Override
-    public void onData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
+    public void onVideoData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
     {
+        if (lastVideoFrameTimeOffset == 0) lastVideoFrameTimeOffset = timeoffset;
+
         // 之前是不是已经发送过了？没有的话，需要补发FLV HEADER的。。。
-        if (headerSend == false && flvEncoder.videoReady())
+        if (videoHeaderSent == false && flvEncoder.videoReady())
         {
             enqueue(HttpChunk.make(flvEncoder.getHeader().getBytes()));
             enqueue(HttpChunk.make(flvEncoder.getVideoHeader().getBytes()));
@@ -38,15 +39,41 @@ public class VideoSubscriber extends Subscriber
                 byte[] iFrame = flvEncoder.getLastIFrame();
                 if (iFrame != null)
                 {
+                    FLVUtils.resetTimestamp(iFrame, (int) videoTimestamp);
                     enqueue(HttpChunk.make(iFrame));
                 }
             }
 
-            headerSend = true;
+            videoHeaderSent = true;
         }
 
         if (data == null) return;
 
+        // 修改时间戳
+        // System.out.println("Time: " + videoTimestamp + ", current: " + timeoffset);
+        FLVUtils.resetTimestamp(data, (int) videoTimestamp);
+        videoTimestamp += (int)(timeoffset - lastVideoFrameTimeOffset);
+        lastVideoFrameTimeOffset = timeoffset;
+
         enqueue(HttpChunk.make(data));
+    }
+
+    @Override
+    public void onAudioData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
+    {
+        if (lastAudioFrameTimeOffset == 0) lastAudioFrameTimeOffset = timeoffset;
+
+        if (data == null) return;
+
+        if (audioHeaderSent == false)
+        {
+            audioHeaderSent = true;
+        }
+
+        FLVUtils.resetTimestamp(data, (int) audioTimestamp);
+        audioTimestamp += (int)(timeoffset - lastAudioFrameTimeOffset);
+        lastAudioFrameTimeOffset = timeoffset;
+
+        if (videoHeaderSent) enqueue(HttpChunk.make(data));
     }
 }

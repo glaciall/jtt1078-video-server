@@ -13,7 +13,7 @@ public final class FLVUtils
         // 0 1 2 3
         // 4 5 6 7
         // 只对视频类的TAG进行修改
-        if (packet[0] != 9) return;
+        if (packet[0] != 9 && packet[0] != 8) return;
 
         packet[4] = (byte)((timestamp >> 16) & 0xff);
         packet[5] = (byte)((timestamp >>  8) & 0xff);

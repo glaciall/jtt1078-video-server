@@ -71,7 +71,6 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         {
             long timestamp = packet.seek(16).nextLong();
             byte[] data = packet.seek(lengthOffset + 2).nextBytes();
-            PublishManager.getInstance().publishA(tag, timestamp, pt, data);
             PublishManager.getInstance().publishAudio(tag, sequence, timestamp, pt, data);
         }
     }

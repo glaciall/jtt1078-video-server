@@ -17,7 +17,7 @@ public class AudioSubscriber extends Subscriber
     }
 
     @Override
-    public void onData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
+    public void onAudioData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
     {
         byte[] wav = ByteUtils.concat(WAVUtils.createHeader(data.length, 1, 8000, 16), data);
         String audioData = new BASE64Encoder().encode(wav).replaceAll("[\r\n]+", "");
@@ -30,5 +30,11 @@ public class AudioSubscriber extends Subscriber
         );
 
         enqueue(output);
+    }
+
+    @Override
+    public void onVideoData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
+    {
+
     }
 }
