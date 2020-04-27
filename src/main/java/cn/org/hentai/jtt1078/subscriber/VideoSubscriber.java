@@ -20,7 +20,6 @@ public class VideoSubscriber extends Subscriber
     private long lastVideoFrameTimeOffset = 0;
     private long lastAudioFrameTimeOffset = 0;
     private boolean videoHeaderSent = false;
-    private boolean audioHeaderSent = false;
 
     public VideoSubscriber(String tag, ChannelHandlerContext ctx)
     {

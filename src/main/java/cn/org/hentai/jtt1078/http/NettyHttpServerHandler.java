@@ -55,33 +55,6 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
             long wid = PublishManager.getInstance().subscribe(tag, Media.Type.Video, ctx).getId();
             setSession(ctx, new Session().set("subscriber-id", wid).set("tag", tag));
         }
-        else if (uri.startsWith("/audio/"))
-        {
-            String tag = uri.substring(7);
-
-            resp.addBytes("HTTP/1.1 200 OK\r\n".getBytes(HEADER_ENCODING));
-            resp.addBytes("Connection: keep-alive\r\n".getBytes(HEADER_ENCODING));
-            resp.addBytes("Transfer-Encoding: chunked\r\n".getBytes(HEADER_ENCODING));
-            resp.addBytes("Cache-Control: no-cache\r\n".getBytes(HEADER_ENCODING));
-            resp.addBytes("Access-Control-Allow-Origin: *\r\n".getBytes(HEADER_ENCODING));
-            resp.addBytes("Access-Control-Allow-Credentials: true\r\n".getBytes(HEADER_ENCODING));
-            resp.addBytes("Access-Control-Allow-Method: *\r\n".getBytes(HEADER_ENCODING));
-            resp.addBytes("\r\n".getBytes(HEADER_ENCODING));
-
-            ctx.writeAndFlush(resp.getBytes()).await();
-
-            // 订阅音频数据
-            long wid = PublishManager.getInstance().subscribe(tag, Media.Type.Audio, ctx).getId();
-            setSession(ctx, new Session().set("subscriber-id", wid).set("tag", tag));
-        }
-        else if (uri.equals("/test/Audio"))
-        {
-            responseHTMLFile("/audio.html", ctx);
-        }
-        else if (uri.equals("/test/Video"))
-        {
-            responseHTMLFile("/video.html", ctx);
-        }
         else if (uri.equals("/test/multimedia"))
         {
             responseHTMLFile("/multimedia.html", ctx);

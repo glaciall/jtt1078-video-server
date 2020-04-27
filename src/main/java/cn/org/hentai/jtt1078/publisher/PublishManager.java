@@ -30,8 +30,8 @@ public final class PublishManager
             channels.put(tag, chl);
         }
         Subscriber subscriber = null;
-        // if (type.equals(Media.Type.Audio)) subscriber = chl.subscribeAudio(ctx);
         if (type.equals(Media.Type.Video)) subscriber = chl.subscribe(ctx);
+        else throw new RuntimeException("unknown media type: " + type);
 
         subscriber.setName("subscriber-" + tag + "-" + subscriber.getId());
         subscriber.start();
