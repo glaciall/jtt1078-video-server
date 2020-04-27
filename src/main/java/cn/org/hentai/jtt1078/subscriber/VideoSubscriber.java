@@ -1,8 +1,13 @@
 package cn.org.hentai.jtt1078.subscriber;
 
+import cn.org.hentai.jtt1078.codec.MP3Encoder;
+import cn.org.hentai.jtt1078.flv.AudioTag;
+import cn.org.hentai.jtt1078.flv.FlvAudioTagEncoder;
 import cn.org.hentai.jtt1078.flv.FlvEncoder;
+import cn.org.hentai.jtt1078.util.ByteBufUtils;
 import cn.org.hentai.jtt1078.util.FLVUtils;
 import cn.org.hentai.jtt1078.util.HttpChunk;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
@@ -58,22 +63,41 @@ public class VideoSubscriber extends Subscriber
         enqueue(HttpChunk.make(data));
     }
 
+    private FlvAudioTagEncoder audioEncoder = new FlvAudioTagEncoder();
+    MP3Encoder mp3Encoder = new MP3Encoder();
+
     @Override
     public void onAudioData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
     {
+        byte[] mp3Data = mp3Encoder.encode(data);
+        if (mp3Data.length == 0) return;
+        AudioTag audioTag = new AudioTag(0, mp3Data.length + 1, AudioTag.MP3, (byte) 0, (byte)0, (byte) 1, mp3Data);
+        byte[] frameData = null;
+        try
+        {
+            ByteBuf audioBuf = audioEncoder.encode(audioTag);
+            frameData = ByteBufUtils.readReadableBytes(audioBuf);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
         if (lastAudioFrameTimeOffset == 0) lastAudioFrameTimeOffset = timeoffset;
 
         if (data == null) return;
 
-        if (audioHeaderSent == false)
-        {
-            audioHeaderSent = true;
-        }
-
-        FLVUtils.resetTimestamp(data, (int) audioTimestamp);
+        FLVUtils.resetTimestamp(frameData, (int) audioTimestamp);
         audioTimestamp += (int)(timeoffset - lastAudioFrameTimeOffset);
         lastAudioFrameTimeOffset = timeoffset;
 
-        if (videoHeaderSent) enqueue(HttpChunk.make(data));
+        if (videoHeaderSent) enqueue(HttpChunk.make(frameData));
+    }
+
+    @Override
+    public void close()
+    {
+        super.close();
+        mp3Encoder.close();
     }
 }

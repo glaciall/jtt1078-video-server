@@ -110,120 +110,6 @@ function FLVPlayer(opts)
         clearInterval(this.autoFastForwardInterval);
     }
 }
-
-/**
- * 流式音频
- * {
- *      url
- * }
- */
-window.AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext || window.msAudioContext;
-var Base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.split('');
-var CharIdxArray = { };
-for (var i = 0; i < Base64Chars.length; i++) CharIdxArray[Base64Chars[i]] = i;
-
-function StreamAudio(url)
-{
-    var streamOffset = 0;
-    var audioContext = new AudioContext();
-    var segments = [];
-    var ended = true;
-
-    var xhr = null;
-    var loaded = false;
-    var timeout = null;
-    this.url = url;
-
-    function playNextSegment()
-    {
-        if (segments.length > 0 && ended)
-        {
-            ended = false;
-            var audioBufferSouceNode = audioContext.createBufferSource();
-            audioBufferSouceNode.onended = function()
-            {
-                ended = true;
-            }
-            audioBufferSouceNode.buffer = segments.shift();
-            audioBufferSouceNode.connect(audioContext.destination);
-            audioBufferSouceNode.start(0);
-        }
-        timeout = setTimeout(playNextSegment, 0);
-    }
-
-    timeout = setTimeout(playNextSegment, 0);
-
-    var decodeCallback = function(buffer)
-    {
-        segments.push(buffer);
-    };
-
-    function base64Decode(text)
-    {
-        var i, k = 0, l;
-        if (text.length < streamOffset + 8) return null;
-        var blockLength = parseInt(text.substring(streamOffset, streamOffset + 8), 16);
-        if (text.length < streamOffset + 8 + blockLength) return null;
-
-        var audioBuffer = new Uint8Array(new ArrayBuffer(2048), 0);
-        for (i = streamOffset + 8, l = text.length; i < l && k < blockLength; )
-        {
-            var a = CharIdxArray[text.charAt(i + 0)];
-            var b = CharIdxArray[text.charAt(i + 1)];
-            var c = CharIdxArray[text.charAt(i + 2)];
-            var d = CharIdxArray[text.charAt(i + 3)];
-
-            var b1 = ((a << 2) | (b >> 4)) & 0xff;
-            var b2 = ((b << 4) | (c >> 2)) & 0xff;
-            var b3 = ((c << 6) | (d)) & 0xff;
-
-            audioBuffer[k++] = b1;
-            audioBuffer[k++] = b2;
-            audioBuffer[k++] = b3;
-
-            i += 4;
-        }
-        streamOffset += blockLength + 8;
-        return audioBuffer.subarray(k);
-    }
-
-    this.play = function()
-    {
-        if (loaded) return;
-        xhr = new XMLHttpRequest();
-        xhr.open('GET', this.url, true);
-        xhr.onprogress = function()
-        {
-            var audioData = xhr.responseText;
-            while (true)
-            {
-                var audio = base64Decode(audioData);
-                if (audio == null) break;
-                audioContext.decodeAudioData(audio.buffer, decodeCallback);
-            }
-        }
-        xhr.send();
-        loaded = true;
-    };
-
-    this.mute = function()
-    {
-
-    };
-
-    this.unmute = function()
-    {
-
-    };
-
-    this.destroy = function()
-    {
-        if (xhr) xhr.abort();
-        xhr = null;
-        clearTimeout(timeout);
-    };
-}
-
 </script>
 <script type="text/javascript">
     var TAG = '013800138999-2';
@@ -242,14 +128,7 @@ function StreamAudio(url)
         });
         videoPlayer.play();
     }
-
-    function playAudio()
-    {
-        var audioPlayer = new StreamAudio('/audio/' + TAG);
-        audioPlayer.play();
-    }
 </script>
 <button onclick="playVideo()">Play Video</button>
-<button onclick="playAudio()">Play Audio</button>
 </body>
 </html>

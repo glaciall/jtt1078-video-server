@@ -32,9 +32,6 @@ public class Channel
     AudioCodec audioCodec;
     FlvEncoder flvEncoder;
     private long firstTimestamp = -1;
-    private FlvAudioTagEncoder audioEncoder = new FlvAudioTagEncoder();
-
-    MP3Encoder mp3Encoder = new MP3Encoder();
 
     public Channel(String tag)
     {
@@ -60,22 +57,8 @@ public class Channel
 
     public void writeAudio(long timestamp, int pt, byte[] data)
     {
-        if (firstTimestamp == -1) firstTimestamp = timestamp;
-        if (this.audioCodec == null) this.audioCodec = AudioCodec.getCodec(pt);
-        byte[] pcmData = this.audioCodec.toPCM(data);
-        byte[] mp3Data = mp3Encoder.encode(pcmData);
-        if (mp3Data.length == 0) return;
-        AudioTag audioTag = new AudioTag(0, mp3Data.length + 1, AudioTag.MP3, (byte) 0, (byte)0, (byte) 1, mp3Data);
-        try
-        {
-            ByteBuf audioBuf = audioEncoder.encode(audioTag);
-            byte[] frameData = ByteBufUtils.readReadableBytes(audioBuf);
-            broadcastAudio(timestamp, frameData);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
+        if (audioCodec == null) audioCodec = AudioCodec.getCodec(pt);
+        broadcastAudio(timestamp, audioCodec.toPCM(data));
     }
 
     public void writeVideo(long sequence, long timeoffset, int payloadType, byte[] h264)
@@ -135,8 +118,6 @@ public class Channel
             subscriber.close();
             itr.remove();
         }
-
-        mp3Encoder.close();
     }
 
     private byte[] readNalu()
