@@ -29,14 +29,14 @@
 |master|通过ffmpeg子进程实现的纯视频RTMP推流方案|平台不限|简单，首屏时间最长|不支持音频，低并发|
 |fifo|通过ffmpeg子进程实现的音视频合并推流RTMP方案|需要linux mkfifo支持|不稳定，需要掌握ffmpeg|可以支持各种视频编码，低并发|
 |multimedia|通过ffmpeg完成h264到flv封装，并直接提供HTTP-FLV支持的视频方案，音视频通过chunked分块传输到前端直接播放|平台不限|-|需要ffmpeg支持，低并发|
-|flv|直接使用java完成h264到flv的封装，并直接提供HTTP-FLV支持的视频方案，音频通过chunked分块传输到前端进行播放|平台不限|首屏时间最短|不支持其它形式的输出|
+|flv|直接使用java完成音视频到flv的封装，并直接提供HTTP-FLV支持的视频方案|平台不限|首屏时间最短|不支持其它形式的输出|
 
 使用了ffmpeg子进程模式的，都可以想办法同时输出多个目标，比如到RTMP，RTMP还可以转为HLS等。
 
 > 有其它语言的开发者，可以参考我的“[JTT/1078音视频传输协议开发指南](https://www.hentai.org.cn/article?id=8)”，我所知道的官方文档里的错误或是缺陷以及坑，我全部写了下来，希望对你有帮助。
 
 ### 项目说明
-本项目接收来自于车载终端发过来的音视频数据，视频直接做flv的封装，音频完成G.711A、G.711U、ADPCMA到PCM的转码，项目内集成的http服务器直接提供chunked分块传输来提供FLV或WAV数据至前端网页播放。
+本项目接收来自于车载终端发过来的音视频数据，视频直接做flv的封装，音频完成G.711A、G.711U、ADPCMA到PCM的转码，项目内集成的http服务器直接提供chunked分块传输来提供FLV至前端网页播放。
 
 #### 视频编码支持
 目前几乎所有的终端视频，默认的视频编码都是h264，打包成flv也是非常简单的，有个别厂家使用avs，但是我没有碰到过。本项目目前也只支持h264编码的视频。
@@ -63,9 +63,6 @@ public abstract class AudioCodec
 }
 ```
 
-#### 音画同步问题
-目前后端严格的控制了下发数据到前端的时间同步，但是视频的播放要比音频的稍慢（更费时间），所以音画不同步的问题还比较明显，通常是声音相当的及时，而视频画面会稍慢，暂时还没有时间去完善。
-
 ### 准备工具
 项目里准备了一个测试程序（`src/main/java/cn.org.hentai.jtt1078.test.VideoPushTest.java`），以及一个数据文件（`src/main/resources/tcpdump.bin`），数据文件是通过工具采集的一段几分钟时长的车载终端发送上来的原始消息包，测试程序可以持续不断的、慢慢的发送数据文件里的内容，用来模拟车载终端发送视频流的过程。
 
@@ -75,7 +72,7 @@ public abstract class AudioCodec
 3. 运行`VideoPushTest.java`，开始模拟车载终端的视频推送。
 4. 开始后，控制台里会输出显示**start publishing: 013800138000-1**的字样
 5. 打开浏览器，输入**http://localhost:3333/test/multimedia#013800138000-1**后回车
-6. 点击网页上的**play video**或**play audio**按钮，开始播放视频或音频
+6. 点击网页上的**play video**，开始播放视频
 
 ### 测试环境
 我在我自己的VPS上搭建了一个1078音视频环境，完全使用了**flv**分支上的代码来创建，各位可以让终端将音视频发送到此服务器或是使用**netcat**等网络工具发送模拟数据来仿真终端，来体验音视频的效果。下面我们说一下通过**netcat**来模拟终端的方法：
@@ -86,7 +83,7 @@ public abstract class AudioCodec
 |实时音视频播放页面|http://1078.hentai.org.cn/test/multimedia#SIM-CHANNEL|
 
 1. 首先，本项目的**/src/main/resources/**下的**tcpdump.bin**即为我抓包存下来的终端音视频数据文件，通过`cat tcpdump.bin | pv -L 30k -q | nc 103.213.245.126 10780`即可以每秒30kBPS的速度，向服务器端持续的发送数据。
-2. 在浏览器里打开**http://1078.hentai.org.cn/test/multimedia#SIM-CHANNEL** （注意替换掉后面的SIM和CHANNEL，即终端的SIM卡号，不足12位前面补0，CHANNEL即为通道号），然后点击网页上的**play video**或**play audio**即可。
+2. 在浏览器里打开**http://1078.hentai.org.cn/test/multimedia#SIM-CHANNEL** （注意替换掉后面的SIM和CHANNEL，即终端的SIM卡号，不足12位前面补0，CHANNEL即为通道号），然后点击网页上的**play video**即可。
 
 ### 项目文件说明
 ```
@@ -172,8 +169,8 @@ public abstract class AudioCodec
 
 - [x] h264到flv直接封装，取消对ffmpeg的依赖
 - [ ] G.726编码到PCM转码的支持
-- [ ] 音画同步问题
-- [ ] flv封装音频
+- [x] 音画同步问题
+- [x] flv封装音频
 
 ### 致谢
 本项目一开始只是个简单的示例项目，在开源、建立QQ交流群后，得到了大批的同道中人的帮助和支持，在此表示谢意。本项目尚未完全完善，非常高兴能够有更多的朋友一起加入进来，一起提出更加闪亮的想法，建设更加强大的视频监控平台！
