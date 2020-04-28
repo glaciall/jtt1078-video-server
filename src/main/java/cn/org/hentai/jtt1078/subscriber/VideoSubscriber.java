@@ -1,22 +1,25 @@
 package cn.org.hentai.jtt1078.subscriber;
 
+import cn.org.hentai.jtt1078.codec.MP3Encoder;
+import cn.org.hentai.jtt1078.flv.AudioTag;
+import cn.org.hentai.jtt1078.flv.FlvAudioTagEncoder;
 import cn.org.hentai.jtt1078.flv.FlvEncoder;
+import cn.org.hentai.jtt1078.util.ByteBufUtils;
 import cn.org.hentai.jtt1078.util.FLVUtils;
 import cn.org.hentai.jtt1078.util.HttpChunk;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-
-import java.io.FileOutputStream;
 
 /**
  * Created by matrixy on 2020/1/13.
  */
 public class VideoSubscriber extends Subscriber
 {
-    private int timestamp = 0;
-    private long lastFrameTimeOffset = 0;
-    private boolean headerSend = false;
-
-    FileOutputStream fos = null;
+    private long videoTimestamp = 0;
+    private long audioTimestamp = 0;
+    private long lastVideoFrameTimeOffset = 0;
+    private long lastAudioFrameTimeOffset = 0;
+    private boolean videoHeaderSent = false;
 
     public VideoSubscriber(String tag, ChannelHandlerContext ctx)
     {
@@ -24,10 +27,12 @@ public class VideoSubscriber extends Subscriber
     }
 
     @Override
-    public void onData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
+    public void onVideoData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
     {
+        if (lastVideoFrameTimeOffset == 0) lastVideoFrameTimeOffset = timeoffset;
+
         // 之前是不是已经发送过了？没有的话，需要补发FLV HEADER的。。。
-        if (headerSend == false && flvEncoder.videoReady())
+        if (videoHeaderSent == false && flvEncoder.videoReady())
         {
             enqueue(HttpChunk.make(flvEncoder.getHeader().getBytes()));
             enqueue(HttpChunk.make(flvEncoder.getVideoHeader().getBytes()));
@@ -38,15 +43,60 @@ public class VideoSubscriber extends Subscriber
                 byte[] iFrame = flvEncoder.getLastIFrame();
                 if (iFrame != null)
                 {
+                    FLVUtils.resetTimestamp(iFrame, (int) videoTimestamp);
                     enqueue(HttpChunk.make(iFrame));
                 }
             }
 
-            headerSend = true;
+            videoHeaderSent = true;
         }
 
         if (data == null) return;
 
+        // 修改时间戳
+        // System.out.println("Time: " + videoTimestamp + ", current: " + timeoffset);
+        FLVUtils.resetTimestamp(data, (int) videoTimestamp);
+        videoTimestamp += (int)(timeoffset - lastVideoFrameTimeOffset);
+        lastVideoFrameTimeOffset = timeoffset;
+
         enqueue(HttpChunk.make(data));
+    }
+
+    private FlvAudioTagEncoder audioEncoder = new FlvAudioTagEncoder();
+    MP3Encoder mp3Encoder = new MP3Encoder();
+
+    @Override
+    public void onAudioData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
+    {
+        byte[] mp3Data = mp3Encoder.encode(data);
+        if (mp3Data.length == 0) return;
+        AudioTag audioTag = new AudioTag(0, mp3Data.length + 1, AudioTag.MP3, (byte) 0, (byte)0, (byte) 1, mp3Data);
+        byte[] frameData = null;
+        try
+        {
+            ByteBuf audioBuf = audioEncoder.encode(audioTag);
+            frameData = ByteBufUtils.readReadableBytes(audioBuf);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        if (lastAudioFrameTimeOffset == 0) lastAudioFrameTimeOffset = timeoffset;
+
+        if (data == null) return;
+
+        FLVUtils.resetTimestamp(frameData, (int) audioTimestamp);
+        audioTimestamp += (int)(timeoffset - lastAudioFrameTimeOffset);
+        lastAudioFrameTimeOffset = timeoffset;
+
+        if (videoHeaderSent) enqueue(HttpChunk.make(frameData));
+    }
+
+    @Override
+    public void close()
+    {
+        super.close();
+        mp3Encoder.close();
     }
 }

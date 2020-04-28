@@ -181,8 +181,17 @@ public class G711UCodec extends AudioCodec
     @Override
     public byte[] toPCM(byte[] data)
     {
-        byte[] dest = new byte[data.length * 2];
-        ulaw_to_pcm16(data.length, data, dest);
+        byte[] temp;
+        // 如果前四字节是00 01 52 00，则是海思头，需要去掉
+        if (data[0] == 0x00 && data[1] == 0x01 && (data[2] & 0xff) == (data.length - 4) / 2 && data[3] == 0x00)
+        {
+            temp = new byte[data.length - 8];
+            System.arraycopy(data, 8, temp, 0, temp.length);
+        }
+        else temp = data;
+
+        byte[] dest = new byte[temp.length * 2];
+        ulaw_to_pcm16(temp.length, temp, dest);
         return dest;
     }
 

@@ -30,8 +30,8 @@ public final class PublishManager
             channels.put(tag, chl);
         }
         Subscriber subscriber = null;
-        if (type.equals(Media.Type.Audio)) subscriber = chl.subscribeAudio(ctx);
-        else if (type.equals(Media.Type.Video)) subscriber = chl.subscribeVideo(ctx);
+        if (type.equals(Media.Type.Video)) subscriber = chl.subscribe(ctx);
+        else throw new RuntimeException("unknown media type: " + type);
 
         subscriber.setName("subscriber-" + tag + "-" + subscriber.getId());
         subscriber.start();
@@ -42,12 +42,7 @@ public final class PublishManager
     public void publishAudio(String tag, int sequence, long timestamp, int payloadType, byte[] data)
     {
         Channel chl = channels.get(tag);
-        if (chl != null) chl.writeAudio(sequence, timestamp, payloadType, data);
-    }
-
-    public void publishA(String tag, long timestamp, int pt, byte[] data) {
-        Channel channel = channels.get(tag);
-        if(channel!=null) channel.writeA(timestamp,pt,data);
+        if (chl != null) chl.writeAudio(timestamp, payloadType, data);
     }
 
     public void publishVideo(String tag, int sequence, long timestamp, int payloadType, byte[] data)

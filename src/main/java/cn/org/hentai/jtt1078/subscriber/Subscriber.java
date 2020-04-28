@@ -38,7 +38,9 @@ public abstract class Subscriber extends Thread
         return this.id;
     }
 
-    public abstract void onData(long timeoffset, byte[] data, FlvEncoder flvEncoder);
+    public abstract void onVideoData(long timeoffset, byte[] data, FlvEncoder flvEncoder);
+
+    public abstract void onAudioData(long timeoffset, byte[] data, FlvEncoder flvEncoder);
 
     public void enqueue(byte[] data)
     {
