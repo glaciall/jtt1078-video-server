@@ -56,7 +56,7 @@ public final class ADPCMCodec extends AudioCodec
         }
         else
         {
-            dlen = (data.length - 4) / 2;
+            dlen = data.length - 4;
             temp = new byte[data.length - 4];
             System.arraycopy(data, 4, temp, 0, temp.length);
 
