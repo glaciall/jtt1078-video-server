@@ -22,7 +22,7 @@
 > 非常感谢**孤峰赏月/hx（[github/jelycom](https://github.com/jelycom)）**提供的mp3音频支持。
 
 ## 分支说明
-本项目目前有4个分支，都处于完善当中，各分支的情况区别如下：
+本项目目前有5个分支，都处于完善当中，各分支的情况区别如下：
 
 |分支|说明|跨平台？|优势|劣势|
 |---|---|---|---|---|
@@ -30,6 +30,7 @@
 |fifo|通过ffmpeg子进程实现的音视频合并推流RTMP方案|需要linux mkfifo支持|不稳定，需要掌握ffmpeg|可以支持各种视频编码，低并发|
 |multimedia|通过ffmpeg完成h264到flv封装，并直接提供HTTP-FLV支持的视频方案，音视频通过chunked分块传输到前端直接播放|平台不限|-|需要ffmpeg支持，低并发|
 |flv|直接使用java完成音视频到flv的封装，并直接提供HTTP-FLV支持的视频方案|平台不限|首屏时间最短|不支持其它形式的输出|
+|cuiyaonan2000|使用javaCV推流到RTMP服务器，并提供HTTP-FLV支持的视频方案|平台不限|--|未测试|
 
 使用了ffmpeg子进程模式的，都可以想办法同时输出多个目标，比如到RTMP，RTMP还可以转为HLS等。
 
@@ -46,7 +47,7 @@
 |---|---|---|
 |G.711A|Y|支持|
 |G.711U|Y|支持|
-|ADPCMA|Y|支持，包括含海思头的（锐明的几乎都有）|
+|ADPCMA|Y|支持|
 |G.726|N|尚未实现|
 
 音频编码太多，也没那么多设备可以测试的，比较常见的就G.711A和ADPCMA这两种，G.726还没有发现哪款终端支持的，没条件测试。另外，音频播放是直接使用PCM到WAV封装的，完全没有压缩，通过BASE64编码后到前端，流量消耗很大，通常比视频还大，这里还需要另外找时间设计个压缩算法才行。
@@ -187,11 +188,11 @@ public abstract class AudioCodec
 * power LXC
 * 奎杜
 * 孤峰赏月/hx（[github/jelycom](https://github.com/jelycom)）
+* 洛奇（[cuiyaonan](https://gitee.com/cuiyaonan2000)）
 
 ### 推荐群友项目
 |项目|URL|作者|说明|
 |---|---|---|---|
-|JTT1078Server|https://github.com/SuperChrisliu/JTT1078Server|[SuperChrisliu](https://github.com/SuperChrisliu)|Java，支持音视频以及语音对讲|
 |JT1078|https://github.com/yedajiang44/JT1078|SmallChi/[yedajiang44](https://github.com/yedajiang44)|C#，支持音视频，通过websocket传输flv到前端|
 
 ### 交流讨论
