@@ -19,7 +19,7 @@
 ## jtt1078-video-server
 基于JT/T 1078协议实现的视频转播服务器，当车机服务器端主动下发**音视频实时传输控制**消息（0x9101）后，车载终端连接到此服务器后，发送指定摄像头所采集的视频流，此项目服务器完成音视频数据接收并转码，完成转播的流程，提供各平台的播放支撑。
 
-> 非常感谢**孤峰赏月/hx（[github/jelycom](https://github.com/jelycom)）**提供的mp3音频支持。
+> 非常感谢 **孤峰赏月/hx（[github/jelycom](https://github.com/jelycom)）** 提供的mp3音频支持。
 
 ## 分支说明
 本项目目前有5个分支，flv分支最完善，各分支的情况区别如下：
@@ -50,7 +50,7 @@
 |ADPCMA|Y|支持|
 |G.726|N|尚未实现|
 
-音频编码太多，也没那么多设备可以测试的，比较常见的就G.711A和ADPCMA这两种，G.726还没有发现哪款终端支持的，没条件测试。另外，音频播放是直接使用PCM到WAV封装的，完全没有压缩，通过BASE64编码后到前端，流量消耗很大，通常比视频还大，这里还需要另外找时间设计个压缩算法才行。
+音频编码太多，也没那么多设备可以测试的，比较常见的就G.711A和ADPCMA这两种，G.726音频的编解码代码的翻译工作不大顺利，暂时不支持，本程序对于不支持的音频，将作静音处理。
 
 #### 音频编码转码扩展实现
 继承并实现`AudioCodec`类的抽象方法，完成任意音频到PCM编码的转码过程，并且补充`AudioCodec.getCodec()`工厂方法即可。`AudioCodec`抽象类原型如下：
@@ -72,7 +72,7 @@ public abstract class AudioCodec
 2. 直接在IDE里运行`cn.org.hentai.jtt1078.app.VideoServerApp`，或对项目进行打包，执行`mvn package`，执行`java -jar jtt1078-video-server-1.0-SNAPSHOT.jar`来启动服务器端。
 3. 运行`VideoPushTest.java`，开始模拟车载终端的视频推送。
 4. 开始后，控制台里会输出显示**start publishing: 013800138000-1**的字样
-5. 打开浏览器，输入**http://localhost:3333/test/multimedia#013800138000-1**后回车
+5. 打开浏览器，输入 **http://localhost:3333/test/multimedia#013800138000-1** 后回车
 6. 点击网页上的**play video**，开始播放视频
 
 ### 测试环境
@@ -83,7 +83,7 @@ public abstract class AudioCodec
 |1078音视频服务器|103.213.245.126:10780|
 |实时音视频播放页面|http://1078.hentai.org.cn/test/multimedia#SIM-CHANNEL|
 
-1. 首先，本项目的**/src/main/resources/**下的**tcpdump.bin**即为我抓包存下来的终端音视频数据文件，通过`cat tcpdump.bin | pv -L 30k -q | nc 103.213.245.126 10780`即可以每秒30kBPS的速度，向服务器端持续的发送数据。
+1. 首先，本项目的 **/src/main/resources/** 下的 **tcpdump.bin** 即为我抓包存下来的终端音视频数据文件，通过`cat tcpdump.bin | pv -L 40k -q | nc 103.213.245.126 10780`即可以每秒40kBPS的速度，向服务器端持续的发送数据。
 2. 在浏览器里打开**http://1078.hentai.org.cn/test/multimedia#SIM-CHANNEL** （注意替换掉后面的SIM和CHANNEL，即终端的SIM卡号，不足12位前面补0，CHANNEL即为通道号），然后点击网页上的**play video**即可。
 
 ### 项目文件说明
