@@ -40,7 +40,7 @@ public class Channel
         this.tag = tag;
         this.subscribers = new LinkedList<Subscriber>();
         this.flvEncoder = new FlvEncoder(true, true);
-        this.buffer = new ByteHolder(409600);
+        this.buffer = new ByteHolder(2048 * 100);
     }
 
     public boolean isPublishing()
