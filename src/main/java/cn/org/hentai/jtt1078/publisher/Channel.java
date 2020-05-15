@@ -2,6 +2,8 @@ package cn.org.hentai.jtt1078.publisher;
 
 import cn.org.hentai.jtt1078.codec.AudioCodec;
 import cn.org.hentai.jtt1078.codec.MP3Encoder;
+import cn.org.hentai.jtt1078.entity.Media;
+import cn.org.hentai.jtt1078.entity.MediaEncoding;
 import cn.org.hentai.jtt1078.flv.AudioTag;
 import cn.org.hentai.jtt1078.flv.FlvAudioTagEncoder;
 import cn.org.hentai.jtt1078.flv.FlvEncoder;
@@ -57,7 +59,11 @@ public class Channel
 
     public void writeAudio(long timestamp, int pt, byte[] data)
     {
-        if (audioCodec == null) audioCodec = AudioCodec.getCodec(pt);
+        if (audioCodec == null)
+        {
+            audioCodec = AudioCodec.getCodec(pt);
+            logger.info("audio codec: {}", MediaEncoding.getEncoding(Media.Type.Audio, pt));
+        }
         broadcastAudio(timestamp, audioCodec.toPCM(data));
     }
 
