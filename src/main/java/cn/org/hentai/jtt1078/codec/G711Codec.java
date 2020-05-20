@@ -31,7 +31,7 @@ public class G711Codec extends AudioCodec
         return size;
     }
 
-    static byte linear2alaw(short pcm_val)
+    public static byte linear2alaw(short pcm_val)
     {
         short mask;
         short seg;
@@ -66,7 +66,7 @@ public class G711Codec extends AudioCodec
     }
 
 
-    static short alaw2linear(byte a_val)
+    public static short alaw2linear(byte a_val)
     {
         short t;
         short seg;

@@ -107,7 +107,7 @@ public class G711UCodec extends AudioCodec
         for (int i = 0; i < 65535; i++) linear_to_ulaw[i] = linear2ulaw((short)i);
     }
 
-    static short ulaw2linear(byte u_val)
+    public static short ulaw2linear(byte u_val)
     {
         short t;
         u_val = (byte)(~u_val);
@@ -117,7 +117,7 @@ public class G711UCodec extends AudioCodec
         return ((u_val & SIGN_BIT) > 0 ? (short)(BIAS - t) : (short)(t - BIAS));
     }
 
-    static byte linear2ulaw(short pcm_val)
+    public static byte linear2ulaw(short pcm_val)
     {
         short mask;
         short seg;
