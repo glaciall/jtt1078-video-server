@@ -70,7 +70,7 @@ public class VideoSubscriber extends Subscriber
     {
         byte[] mp3Data = mp3Encoder.encode(data);
         if (mp3Data.length == 0) return;
-        AudioTag audioTag = new AudioTag(0, mp3Data.length + 1, AudioTag.MP3, (byte) 0, (byte)0, (byte) 1, mp3Data);
+        AudioTag audioTag = new AudioTag(0, mp3Data.length + 1, AudioTag.MP3, (byte) 0, (byte)1, (byte) 0, mp3Data);
         byte[] frameData = null;
         try
         {
