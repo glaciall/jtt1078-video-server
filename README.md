@@ -30,7 +30,6 @@
 |fifo|通过ffmpeg子进程实现的音视频合并推流RTMP方案|需要linux mkfifo支持|不稳定，需要掌握ffmpeg|可以支持各种视频编码，低并发|
 |multimedia|通过ffmpeg完成h264到flv封装，并直接提供HTTP-FLV支持的视频方案，音视频通过chunked分块传输到前端直接播放|平台不限|-|需要ffmpeg支持，低并发|
 |flv|直接使用java完成音视频到flv的封装，并直接提供HTTP-FLV支持的视频方案|平台不限|首屏时间最短|不支持其它形式的输出|
-|cuiyaonan2000|使用javaCV推流到RTMP服务器，并提供HTTP-FLV支持的视频方案|平台不限|--|未测试|
 
 使用了ffmpeg子进程模式的，都可以想办法同时输出多个目标，比如到RTMP，RTMP还可以转为HLS等。
 
