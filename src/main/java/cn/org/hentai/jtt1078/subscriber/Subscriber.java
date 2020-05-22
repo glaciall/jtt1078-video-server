@@ -73,7 +73,8 @@ public abstract class Subscriber extends Thread
             catch(Exception ex)
             {
                 //销毁线程时，如果有锁wait就不会销毁线程，抛出InterruptedException异常
-                if(ex instanceof InterruptedException){
+                if (ex instanceof InterruptedException)
+                {
                     break loop;
                 }
                 logger.error("send failed", ex);

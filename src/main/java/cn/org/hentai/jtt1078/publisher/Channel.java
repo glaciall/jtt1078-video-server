@@ -111,6 +111,7 @@ public class Channel
             if (subscriber.getId() == watcherId)
             {
                 itr.remove();
+                subscriber.close();
                 return;
             }
         }
