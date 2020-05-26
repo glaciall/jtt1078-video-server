@@ -43,6 +43,7 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
 
             resp.addBytes("HTTP/1.1 200 OK\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("Connection: keep-alive\r\n".getBytes(HEADER_ENCODING));
+            resp.addBytes("Content-Type: video/x-flv\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("Transfer-Encoding: chunked\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("Cache-Control: no-cache\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("Access-Control-Allow-Origin: *\r\n".getBytes(HEADER_ENCODING));
