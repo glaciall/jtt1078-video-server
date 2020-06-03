@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created by matrixy on 2020/1/11.
@@ -26,7 +27,7 @@ public class Channel
 {
     static Logger logger = LoggerFactory.getLogger(Channel.class);
 
-    LinkedList<Subscriber> subscribers;
+    ConcurrentLinkedQueue<Subscriber> subscribers;
 
     String tag;
     boolean publishing;
@@ -38,7 +39,7 @@ public class Channel
     public Channel(String tag)
     {
         this.tag = tag;
-        this.subscribers = new LinkedList<Subscriber>();
+        this.subscribers = new ConcurrentLinkedQueue<Subscriber>();
         this.flvEncoder = new FlvEncoder(true, true);
         this.buffer = new ByteHolder(2048 * 100);
     }
@@ -53,7 +54,7 @@ public class Channel
         logger.info("channel: {} -> {}, subscriber: {}", Long.toHexString(hashCode() & 0xffffffffL), tag, ctx.channel().remoteAddress().toString());
 
         Subscriber subscriber = new VideoSubscriber(this.tag, ctx);
-        this.subscribers.addLast(subscriber);
+        this.subscribers.add(subscriber);
         return subscriber;
     }
 
