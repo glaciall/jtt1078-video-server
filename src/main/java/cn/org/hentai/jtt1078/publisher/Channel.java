@@ -7,12 +7,15 @@ import cn.org.hentai.jtt1078.entity.MediaEncoding;
 import cn.org.hentai.jtt1078.flv.AudioTag;
 import cn.org.hentai.jtt1078.flv.FlvAudioTagEncoder;
 import cn.org.hentai.jtt1078.flv.FlvEncoder;
+import cn.org.hentai.jtt1078.subscriber.RTMPSubscriber;
 import cn.org.hentai.jtt1078.subscriber.Subscriber;
 import cn.org.hentai.jtt1078.subscriber.VideoSubscriber;
 import cn.org.hentai.jtt1078.util.ByteBufUtils;
 import cn.org.hentai.jtt1078.util.ByteHolder;
+import cn.org.hentai.jtt1078.util.Configs;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +31,7 @@ public class Channel
     static Logger logger = LoggerFactory.getLogger(Channel.class);
 
     ConcurrentLinkedQueue<Subscriber> subscribers;
+    Subscriber rtmpPublisher;
 
     String tag;
     boolean publishing;
@@ -42,6 +46,12 @@ public class Channel
         this.subscribers = new ConcurrentLinkedQueue<Subscriber>();
         this.flvEncoder = new FlvEncoder(true, true);
         this.buffer = new ByteHolder(2048 * 100);
+
+        if (StringUtils.isEmpty(Configs.get("rtmp.url")) == false)
+        {
+            // rtmpPublisher = new RTMPSubscriber(tag);
+            // rtmpPublisher.start();
+        }
     }
 
     public boolean isPublishing()
@@ -94,6 +104,17 @@ public class Channel
         {
             subscriber.onVideoData(timeoffset, flvTag, flvEncoder);
         }
+
+        if (rtmpPublisher != null)
+        {
+            if (rtmpPublisher.isInterrupted())
+            {
+                rtmpPublisher = new RTMPSubscriber(tag);
+                rtmpPublisher.setName("rtmp-publisher-" + tag);
+                rtmpPublisher.start();
+            }
+            rtmpPublisher.onVideoData(timeoffset, flvTag, flvEncoder);
+        }
     }
 
     public void broadcastAudio(long timeoffset, byte[] flvTag)
@@ -101,6 +122,15 @@ public class Channel
         for (Subscriber subscriber : subscribers)
         {
             subscriber.onAudioData(timeoffset, flvTag, flvEncoder);
+        }
+        if (rtmpPublisher != null)
+        {
+            if (rtmpPublisher.isInterrupted())
+            {
+                rtmpPublisher = new RTMPSubscriber(tag);
+                rtmpPublisher.start();
+            }
+            rtmpPublisher.onAudioData(timeoffset, flvTag, flvEncoder);
         }
     }
 
@@ -126,6 +156,7 @@ public class Channel
             subscriber.close();
             itr.remove();
         }
+        if (rtmpPublisher != null) rtmpPublisher.close();
     }
 
     private byte[] readNalu()
