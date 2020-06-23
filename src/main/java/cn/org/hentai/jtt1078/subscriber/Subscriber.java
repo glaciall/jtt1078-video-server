@@ -1,6 +1,7 @@
 package cn.org.hentai.jtt1078.subscriber;
 
 import cn.org.hentai.jtt1078.flv.FlvEncoder;
+import cn.org.hentai.jtt1078.util.Packet;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -64,7 +65,12 @@ public abstract class Subscriber extends Thread
             try
             {
                 byte[] data = take();
-                if (data != null) send(data).await();
+                if (data != null)
+                {
+                    send(String.format("%x\r\n", data.length).getBytes()).await();
+                    send(data).await();
+                    send(new byte[] { (byte) '\r', (byte) '\n' }).await();
+                }
             }
             catch(Exception ex)
             {

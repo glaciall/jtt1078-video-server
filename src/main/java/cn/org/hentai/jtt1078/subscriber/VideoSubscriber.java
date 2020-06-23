@@ -6,7 +6,6 @@ import cn.org.hentai.jtt1078.flv.FlvAudioTagEncoder;
 import cn.org.hentai.jtt1078.flv.FlvEncoder;
 import cn.org.hentai.jtt1078.util.ByteBufUtils;
 import cn.org.hentai.jtt1078.util.FLVUtils;
-import cn.org.hentai.jtt1078.util.HttpChunk;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -34,18 +33,15 @@ public class VideoSubscriber extends Subscriber
         // 之前是不是已经发送过了？没有的话，需要补发FLV HEADER的。。。
         if (videoHeaderSent == false && flvEncoder.videoReady())
         {
-            enqueue(HttpChunk.make(flvEncoder.getHeader().getBytes()));
-            enqueue(HttpChunk.make(flvEncoder.getVideoHeader().getBytes()));
+            enqueue(flvEncoder.getHeader().getBytes());
+            enqueue(flvEncoder.getVideoHeader().getBytes());
 
-            // 如果第一次发送碰到的不是I祯，那就把上一个缓存的I祯发下去
-            if ((data[4] & 0x1f) != 0x05)
+            // 直接下发第一个I帧
+            byte[] iFrame = flvEncoder.getLastIFrame();
+            if (iFrame != null)
             {
-                byte[] iFrame = flvEncoder.getLastIFrame();
-                if (iFrame != null)
-                {
-                    FLVUtils.resetTimestamp(iFrame, (int) videoTimestamp);
-                    enqueue(HttpChunk.make(iFrame));
-                }
+                FLVUtils.resetTimestamp(iFrame, (int) videoTimestamp);
+                enqueue(iFrame);
             }
 
             videoHeaderSent = true;
@@ -59,7 +55,7 @@ public class VideoSubscriber extends Subscriber
         videoTimestamp += (int)(timeoffset - lastVideoFrameTimeOffset);
         lastVideoFrameTimeOffset = timeoffset;
 
-        enqueue(HttpChunk.make(data));
+        enqueue(data);
     }
 
     private FlvAudioTagEncoder audioEncoder = new FlvAudioTagEncoder();
@@ -90,7 +86,7 @@ public class VideoSubscriber extends Subscriber
         audioTimestamp += (int)(timeoffset - lastAudioFrameTimeOffset);
         lastAudioFrameTimeOffset = timeoffset;
 
-        if (videoHeaderSent) enqueue(HttpChunk.make(frameData));
+        if (videoHeaderSent) enqueue(frameData);
     }
 
     @Override
