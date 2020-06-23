@@ -38,6 +38,11 @@ public abstract class Subscriber extends Thread
         return this.id;
     }
 
+    public String getTag()
+    {
+        return this.tag;
+    }
+
     public abstract void onVideoData(long timeoffset, byte[] data, FlvEncoder flvEncoder);
 
     public abstract void onAudioData(long timeoffset, byte[] data, FlvEncoder flvEncoder);
@@ -58,17 +63,8 @@ public abstract class Subscriber extends Thread
         {
             try
             {
-                byte[] data = null;
-                synchronized (lock)
-                {
-                    while (messages.isEmpty())
-                    {
-                        lock.wait(100);
-                        if (this.isInterrupted()) break loop;
-                    }
-                    data = messages.removeFirst();
-                }
-                send(data).await();
+                byte[] data = take();
+                if (data != null) send(data).await();
             }
             catch(Exception ex)
             {
@@ -81,6 +77,28 @@ public abstract class Subscriber extends Thread
             }
         }
         logger.info("subscriber closed");
+    }
+
+    protected byte[] take()
+    {
+        byte[] data = null;
+        try
+        {
+            synchronized (lock)
+            {
+                while (messages.isEmpty())
+                {
+                    lock.wait(100);
+                    if (this.isInterrupted()) return null;
+                }
+                data = messages.removeFirst();
+            }
+            return data;
+        }
+        catch(Exception ex)
+        {
+            return null;
+        }
     }
 
     public void close()
