@@ -48,11 +48,11 @@ function FLVPlayer(opts)
             type                            : 'flv',
             url                             : self.httpFlvURL,
             isLive                          : true,
-            enableStashBuffer               : false,
+            enableWorker                    : true,
+            enableStashBuffer               : true,
             autoCleanupSourceBuffer         : true,
             autoCleanupMaxBackwardDuration  : 5,
-            autoCleanupMinBackwardDuration  : 1,
-            stashInitialSize                : 32
+            autoCleanupMinBackwardDuration  : 1
         });
 
         self.player.on('media_info', function()
