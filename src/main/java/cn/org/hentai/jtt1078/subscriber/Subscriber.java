@@ -65,12 +65,7 @@ public abstract class Subscriber extends Thread
             try
             {
                 byte[] data = take();
-                if (data != null)
-                {
-                    send(String.format("%x\r\n", data.length).getBytes()).await();
-                    send(data).await();
-                    send(new byte[] { (byte) '\r', (byte) '\n' }).await();
-                }
+                if (data != null) send(data).await();
             }
             catch(Exception ex)
             {
