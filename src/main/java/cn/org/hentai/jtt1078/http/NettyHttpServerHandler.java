@@ -39,7 +39,7 @@ public class NettyHttpServerHandler extends ChannelInboundHandlerAdapter
         // uri的第二段，就是通道标签
         if (uri.startsWith("/video/"))
         {
-            String tag = uri.substring(7);
+            String tag = uri.substring("/video/".length());
 
             resp.addBytes("HTTP/1.1 200 OK\r\n".getBytes(HEADER_ENCODING));
             resp.addBytes("Connection: keep-alive\r\n".getBytes(HEADER_ENCODING));
