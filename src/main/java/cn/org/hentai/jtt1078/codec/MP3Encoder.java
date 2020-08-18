@@ -26,6 +26,7 @@ public class MP3Encoder
 
     public byte[] encode(byte[] pcm)
     {
+        if (pcm == null) return null;
         int bytesToTransfer = Math.min(encoder.getPCMBufferSize(), pcm.length);
         int bytesWritten;
         int currentPcmPosition = 0;
