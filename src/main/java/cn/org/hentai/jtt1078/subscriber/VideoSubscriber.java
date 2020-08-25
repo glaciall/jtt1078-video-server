@@ -65,6 +65,8 @@ public class VideoSubscriber extends Subscriber
     @Override
     public void onAudioData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
     {
+        if (!videoHeaderSent) return;
+
         byte[] mp3Data = mp3Encoder.encode(data);
         if (mp3Data == null || mp3Data.length == 0) return;
         AudioTag audioTag = new AudioTag(0, mp3Data.length + 1, AudioTag.MP3, (byte) 0, (byte)1, (byte) 0, mp3Data);
@@ -87,7 +89,7 @@ public class VideoSubscriber extends Subscriber
         audioTimestamp += (int)(timeoffset - lastAudioFrameTimeOffset);
         lastAudioFrameTimeOffset = timeoffset;
 
-        if (videoHeaderSent) enqueue(HttpChunk.make(frameData));
+        enqueue(HttpChunk.make(frameData));
     }
 
     @Override
