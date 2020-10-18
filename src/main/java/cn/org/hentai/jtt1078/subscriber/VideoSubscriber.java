@@ -37,15 +37,12 @@ public class VideoSubscriber extends Subscriber
             enqueue(HttpChunk.make(flvEncoder.getHeader().getBytes()));
             enqueue(HttpChunk.make(flvEncoder.getVideoHeader().getBytes()));
 
-            // 如果第一次发送碰到的不是I祯，那就把上一个缓存的I祯发下去
-            if ((data[4] & 0x1f) != 0x05)
+            // 直接下发第一个I帧
+            byte[] iFrame = flvEncoder.getLastIFrame();
+            if (iFrame != null)
             {
-                byte[] iFrame = flvEncoder.getLastIFrame();
-                if (iFrame != null)
-                {
-                    FLVUtils.resetTimestamp(iFrame, (int) videoTimestamp);
-                    enqueue(HttpChunk.make(iFrame));
-                }
+                FLVUtils.resetTimestamp(iFrame, (int) videoTimestamp);
+                enqueue(HttpChunk.make(iFrame));
             }
 
             videoHeaderSent = true;
@@ -68,9 +65,11 @@ public class VideoSubscriber extends Subscriber
     @Override
     public void onAudioData(long timeoffset, byte[] data, FlvEncoder flvEncoder)
     {
+        if (!videoHeaderSent) return;
+
         byte[] mp3Data = mp3Encoder.encode(data);
-        if (mp3Data.length == 0) return;
-        AudioTag audioTag = new AudioTag(0, mp3Data.length + 1, AudioTag.MP3, (byte) 0, (byte)0, (byte) 1, mp3Data);
+        if (mp3Data == null || mp3Data.length == 0) return;
+        AudioTag audioTag = new AudioTag(0, mp3Data.length + 1, AudioTag.MP3, (byte) 0, (byte)1, (byte) 0, mp3Data);
         byte[] frameData = null;
         try
         {
@@ -90,7 +89,7 @@ public class VideoSubscriber extends Subscriber
         audioTimestamp += (int)(timeoffset - lastAudioFrameTimeOffset);
         lastAudioFrameTimeOffset = timeoffset;
 
-        if (videoHeaderSent) enqueue(HttpChunk.make(frameData));
+        enqueue(HttpChunk.make(frameData));
     }
 
     @Override

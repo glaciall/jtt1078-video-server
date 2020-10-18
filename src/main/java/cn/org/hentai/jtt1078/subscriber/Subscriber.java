@@ -1,6 +1,7 @@
 package cn.org.hentai.jtt1078.subscriber;
 
 import cn.org.hentai.jtt1078.flv.FlvEncoder;
+import cn.org.hentai.jtt1078.util.Packet;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -38,6 +39,11 @@ public abstract class Subscriber extends Thread
         return this.id;
     }
 
+    public String getTag()
+    {
+        return this.tag;
+    }
+
     public abstract void onVideoData(long timeoffset, byte[] data, FlvEncoder flvEncoder);
 
     public abstract void onAudioData(long timeoffset, byte[] data, FlvEncoder flvEncoder);
@@ -58,24 +64,42 @@ public abstract class Subscriber extends Thread
         {
             try
             {
-                byte[] data = null;
-                synchronized (lock)
-                {
-                    while (messages.isEmpty())
-                    {
-                        lock.wait(100);
-                        if (this.isInterrupted()) break loop;
-                    }
-                    data = messages.removeFirst();
-                }
-                send(data).await();
+                byte[] data = take();
+                if (data != null) send(data).await();
             }
             catch(Exception ex)
             {
+                //销毁线程时，如果有锁wait就不会销毁线程，抛出InterruptedException异常
+                if (ex instanceof InterruptedException)
+                {
+                    break loop;
+                }
                 logger.error("send failed", ex);
             }
         }
         logger.info("subscriber closed");
+    }
+
+    protected byte[] take()
+    {
+        byte[] data = null;
+        try
+        {
+            synchronized (lock)
+            {
+                while (messages.isEmpty())
+                {
+                    lock.wait(100);
+                    if (this.isInterrupted()) return null;
+                }
+                data = messages.removeFirst();
+            }
+            return data;
+        }
+        catch(Exception ex)
+        {
+            return null;
+        }
     }
 
     public void close()

@@ -1,21 +1,21 @@
 package cn.org.hentai.jtt1078.publisher;
 
 import cn.org.hentai.jtt1078.codec.AudioCodec;
-import cn.org.hentai.jtt1078.codec.MP3Encoder;
-import cn.org.hentai.jtt1078.flv.AudioTag;
-import cn.org.hentai.jtt1078.flv.FlvAudioTagEncoder;
+import cn.org.hentai.jtt1078.entity.Media;
+import cn.org.hentai.jtt1078.entity.MediaEncoding;
 import cn.org.hentai.jtt1078.flv.FlvEncoder;
+import cn.org.hentai.jtt1078.subscriber.RTMPPublisher;
 import cn.org.hentai.jtt1078.subscriber.Subscriber;
 import cn.org.hentai.jtt1078.subscriber.VideoSubscriber;
-import cn.org.hentai.jtt1078.util.ByteBufUtils;
 import cn.org.hentai.jtt1078.util.ByteHolder;
-import io.netty.buffer.ByteBuf;
+import cn.org.hentai.jtt1078.util.Configs;
 import io.netty.channel.ChannelHandlerContext;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created by matrixy on 2020/1/11.
@@ -24,7 +24,8 @@ public class Channel
 {
     static Logger logger = LoggerFactory.getLogger(Channel.class);
 
-    LinkedList<Subscriber> subscribers;
+    ConcurrentLinkedQueue<Subscriber> subscribers;
+    RTMPPublisher rtmpPublisher;
 
     String tag;
     boolean publishing;
@@ -36,9 +37,15 @@ public class Channel
     public Channel(String tag)
     {
         this.tag = tag;
-        this.subscribers = new LinkedList<Subscriber>();
+        this.subscribers = new ConcurrentLinkedQueue<Subscriber>();
         this.flvEncoder = new FlvEncoder(true, true);
-        this.buffer = new ByteHolder(409600);
+        this.buffer = new ByteHolder(2048 * 100);
+
+        if (StringUtils.isEmpty(Configs.get("rtmp.url")) == false)
+        {
+            rtmpPublisher = new RTMPPublisher(tag);
+            rtmpPublisher.start();
+        }
     }
 
     public boolean isPublishing()
@@ -51,13 +58,17 @@ public class Channel
         logger.info("channel: {} -> {}, subscriber: {}", Long.toHexString(hashCode() & 0xffffffffL), tag, ctx.channel().remoteAddress().toString());
 
         Subscriber subscriber = new VideoSubscriber(this.tag, ctx);
-        this.subscribers.addLast(subscriber);
+        this.subscribers.add(subscriber);
         return subscriber;
     }
 
     public void writeAudio(long timestamp, int pt, byte[] data)
     {
-        if (audioCodec == null) audioCodec = AudioCodec.getCodec(pt);
+        if (audioCodec == null)
+        {
+            audioCodec = AudioCodec.getCodec(pt);
+            logger.info("audio codec: {}", MediaEncoding.getEncoding(Media.Type.Audio, pt));
+        }
         broadcastAudio(timestamp, audioCodec.toPCM(data));
     }
 
@@ -105,6 +116,7 @@ public class Channel
             if (subscriber.getId() == watcherId)
             {
                 itr.remove();
+                subscriber.close();
                 return;
             }
         }
@@ -118,6 +130,7 @@ public class Channel
             subscriber.close();
             itr.remove();
         }
+        if (rtmpPublisher != null) rtmpPublisher.close();
     }
 
     private byte[] readNalu()

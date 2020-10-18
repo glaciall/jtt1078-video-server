@@ -1,6 +1,5 @@
 package cn.org.hentai.jtt1078.codec;
 
-import cn.org.hentai.jtt1078.entity.Audio;
 import cn.org.hentai.jtt1078.entity.MediaEncoding;
 
 /**
@@ -16,7 +15,8 @@ public abstract class AudioCodec
         if (MediaEncoding.Encoding.ADPCMA.ordinal() == encoding) return new ADPCMCodec();
         else if (MediaEncoding.Encoding.G711A.ordinal() == encoding) return new G711Codec();
         else if (MediaEncoding.Encoding.G711U.ordinal() == encoding) return new G711UCodec();
+        else if (MediaEncoding.Encoding.G726.ordinal() == encoding) return new G726Codec();
         // else if (Audio.Encoding.G726.equals(encoding)) ;
-        else return new RawDataCopyCodec();
+        else return new SilenceCodec();
     }
 }

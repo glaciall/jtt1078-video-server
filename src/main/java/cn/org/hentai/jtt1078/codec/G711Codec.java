@@ -31,7 +31,7 @@ public class G711Codec extends AudioCodec
         return size;
     }
 
-    static byte linear2alaw(short pcm_val)
+    public static byte linear2alaw(short pcm_val)
     {
         short mask;
         short seg;
@@ -66,7 +66,7 @@ public class G711Codec extends AudioCodec
     }
 
 
-    static short alaw2linear(byte a_val)
+    public static short alaw2linear(byte a_val)
     {
         short t;
         short seg;
@@ -122,8 +122,8 @@ public class G711Codec extends AudioCodec
         // 如果前四字节是00 01 52 00，则是海思头，需要去掉
         if (data[0] == 0x00 && data[1] == 0x01 && (data[2] & 0xff) == (data.length - 4) / 2 && data[3] == 0x00)
         {
-            temp = new byte[data.length - 8];
-            System.arraycopy(data, 8, temp, 0, temp.length);
+            temp = new byte[data.length - 4];
+            System.arraycopy(data, 4, temp, 0, temp.length);
         }
         else temp = data;
 
