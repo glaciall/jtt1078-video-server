@@ -66,8 +66,8 @@ public abstract class AudioCodec
 1. 配置好服务器端，修改`app.properties`里的配置项。
 2. 直接在IDE里运行`cn.org.hentai.jtt1078.app.VideoServerApp`，或对项目进行打包，执行`mvn package`，执行`java -jar jtt1078-video-server-1.0-SNAPSHOT.jar`来启动服务器端。
 3. 运行`VideoPushTest.java`，开始模拟车载终端的视频推送。
-4. 开始后，控制台里会输出显示**start publishing: 013800138000-1**的字样
-5. 打开浏览器，输入 **http://localhost:3333/test/multimedia#013800138000-1** 后回车
+4. 开始后，控制台里会输出显示**start publishing: 013800138999-2**的字样
+5. 打开浏览器，输入 **http://localhost:3333/test/multimedia#013800138999-2** 后回车
 6. 点击网页上的**play video**，开始播放视频
 
 ### 测试环境
