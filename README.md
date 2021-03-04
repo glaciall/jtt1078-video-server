@@ -75,11 +75,13 @@ public abstract class AudioCodec
 
 |标题|说明|
 |---|---|
-|1078音视频服务器|45.144.137.128:10780|
+|1078音视频服务器|185.251.248.4:10780|
 |实时音视频播放页面|http://1078.hentai.org.cn/test/multimedia#SIM-CHANNEL|
 
-1. 首先，本项目的 **/src/main/resources/** 下的 **tcpdump.bin** 即为我抓包存下来的终端音视频数据文件，通过`cat tcpdump.bin | pv -L 40k -q | nc 103.143.81.233 10780`即可以每秒40kBPS的速度，向服务器端持续的发送数据。
+1. 首先，本项目的 **/src/main/resources/** 下的 **tcpdump.bin** 即为我抓包存下来的终端音视频数据文件，通过`cat tcpdump.bin | pv -L 40k -q | nc 185.251.248.4 10780`即可以每秒40kBPS的速度，向服务器端持续的发送数据。
 2. 在浏览器里打开**http://1078.hentai.org.cn/test/multimedia#SIM-CHANNEL** （注意替换掉后面的SIM和CHANNEL，即终端的SIM卡号，不足12位前面补0，CHANNEL即为通道号），然后点击网页上的**play video**即可。
+
+> 由于我的服务器IP随时可能会发生变化，建设在尝试连接测试服务器前，先通过`ping www.hentai.org.cn`来确定最新的IP。
 
 ### 项目文件说明
 ```
@@ -208,3 +210,7 @@ public abstract class AudioCodec
 ### 交流讨论
 QQ群：808432702，加入我们，群里有热心的同道中人、相关资料、测试数据、代码以及各种方案的先行者等着你。
 
+### 捐助
+开源不易，请我抽支芙蓉王吧。
+
+<img src="./doc/donate.png" />
