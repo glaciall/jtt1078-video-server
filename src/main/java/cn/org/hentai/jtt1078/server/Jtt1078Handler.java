@@ -22,29 +22,25 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
 {
     static Logger logger = LoggerFactory.getLogger(Jtt1078Handler.class);
     private static final AttributeKey<Session> SESSION_KEY = AttributeKey.valueOf("session-key");
-    private ChannelHandlerContext context;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Packet packet) throws Exception
     {
-        this.context = ctx;
+        io.netty.channel.Channel nettyChannel = ctx.channel();
+
         packet.seek(8);
         String sim = packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD() + packet.nextBCD();
         int channel = packet.nextByte() & 0xff;
         String tag = sim + "-" + channel;
 
-        Session session = getSession();
-        if (null == session)
+        if (SessionManager.contains(nettyChannel, "tag") == false)
         {
-            setSession(session = new Session());
-
             Channel chl = PublishManager.getInstance().open(tag);
-
-            session.set("tag", tag);
+            SessionManager.set(nettyChannel, "tag", tag);
             logger.info("start publishing: {} -> {}-{}", Long.toHexString(chl.hashCode() & 0xffffffffL), sim, channel);
         }
 
-        Integer sequence = session.get("video-sequence");
+        Integer sequence = SessionManager.get(nettyChannel, "video-sequence");
         if (sequence == null) sequence = 0;
         // 1. 做好序号
         // 2. 音频需要转码后提供订阅
@@ -63,7 +59,7 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
             if (pkType == 0 || pkType == 2)
             {
                 sequence += 1;
-                session.set("video-sequence", sequence);
+                SessionManager.set(nettyChannel, "video-sequence", sequence);
             }
             long timestamp = packet.seek(16).nextLong();
             PublishManager.getInstance().publishVideo(tag, sequence, timestamp, pt, packet.seek(lengthOffset + 2).nextBytes());
@@ -76,23 +72,11 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         }
     }
 
-    public final Session getSession()
-    {
-        Attribute<Session> attr = context.channel().attr(SESSION_KEY);
-        if (null == attr) return null;
-        else return attr.get();
-    }
-
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception
     {
         super.channelInactive(ctx);
-        release();
-    }
-
-    public final void setSession(Session session)
-    {
-        context.channel().attr(SESSION_KEY).set(session);
+        release(ctx.channel());
     }
 
     @Override
@@ -100,13 +84,13 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
     {
         // super.exceptionCaught(ctx, cause);
         cause.printStackTrace();
-        release();
+        release(ctx.channel());
         ctx.close();
     }
 
-    private void release()
+    private void release(io.netty.channel.Channel channel)
     {
-        String tag = getSession().get("tag");
+        String tag = SessionManager.get(channel, "tag");
         if (tag != null)
         {
             logger.info("close netty channel: {}", tag);

@@ -5,6 +5,7 @@ import cn.org.hentai.jtt1078.http.NettyHttpServerHandler;
 import cn.org.hentai.jtt1078.publisher.PublishManager;
 import cn.org.hentai.jtt1078.server.Jtt1078Handler;
 import cn.org.hentai.jtt1078.server.Jtt1078MessageDecoder;
+import cn.org.hentai.jtt1078.server.SessionManager;
 import cn.org.hentai.jtt1078.util.Configs;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -32,6 +33,7 @@ public class VideoServerApp
     {
         Configs.init("/app.properties");
         PublishManager.init();
+        SessionManager.init();
 
         VideoServer videoServer = new VideoServer();
         HttpServer httpServer = new HttpServer();
