@@ -135,7 +135,7 @@ public class Channel
 
     private byte[] readNalu()
     {
-        for (int i = 0; i < buffer.size(); i++)
+        for (int i = 0; i < buffer.size() - 3; i++)
         {
             int a = buffer.get(i + 0) & 0xff;
             int b = buffer.get(i + 1) & 0xff;
