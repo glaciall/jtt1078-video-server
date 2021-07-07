@@ -12,8 +12,9 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.Iterator;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 
 /**
  * Created by matrixy on 2019/4/9.
@@ -86,6 +87,18 @@ public class Jtt1078Handler extends SimpleChannelInboundHandler<Packet>
         cause.printStackTrace();
         release(ctx.channel());
         ctx.close();
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (IdleStateEvent.class.isAssignableFrom(evt.getClass())) {
+            IdleStateEvent event = (IdleStateEvent) evt;
+            if (event.state() == IdleState.READER_IDLE) {
+                String tag = SessionManager.get(ctx.channel(), "tag");
+                logger.info("read timeout: {}",tag);
+                release(ctx.channel());
+            }
+        }
     }
 
     private void release(io.netty.channel.Channel channel)
