@@ -72,7 +72,7 @@ public class VideoServerApp
                         @Override
                         protected void initChannel(final SocketChannel channel) throws Exception {
                             ChannelPipeline p = channel.pipeline();
-                            p.addLast(new IdleStateHandler(10,0,0, TimeUnit.SECONDS));
+                            // p.addLast(new IdleStateHandler(10,0,0, TimeUnit.SECONDS));
                             p.addLast(new Jtt1078MessageDecoder());
                             // p.addLast(new Jtt808MessageEncoder());
                             // p.addLast(new JTT808Handler());
